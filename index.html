@@ -530,9 +530,9 @@ function render() {
       <td><span class="dca-count">${p.tramos.length}</span></td>
       <td class="units">${p.totalUnidades.toFixed(4)}</td>
       <td class="price">${fmt$(p.ppp)}<span class="ppp-hint">/u</span></td>
-      <td class="price">${fmt$(p.valorActual)}${liveInfo}</td>
+      <td class="price">${p.valorActual>0 ? fmt$(p.valorActual)+(liveInfo?'&nbsp;'+liveInfo:'') : '<span class="pnl-zero">sin precio</span>'}</td>
       <td class="price">${p.pVenta?fmt$(p.pVenta):'—'}</td>
-      <td>${fmt$(p.totalInvertido)}</td>
+      <td>${p.estado==='abierta'?fmt$(p.totalInvertido):'<span class="pnl-zero">'+fmt$(p.totalInvertido)+'</span>'}</td>
       <td class="${pc}">${fmtPct(p.pnlPct)}</td>
       <td class="${pc}">${p.pnlUSD>=0?'+':'-'}${fmt$(p.pnlUSD)}</td>
       <td><div class="actions">
@@ -567,13 +567,17 @@ function render() {
   document.getElementById('tbody').innerHTML = html;
 
   // Footer
-  const totInv = filtered.reduce((s,p)=>s+p.totalInvertido,0);
+  const totInvAbiertas = filtered.filter(p=>p.estado==='abierta').reduce((s,p)=>s+p.totalInvertido,0);
+  const totInvCerradas = filtered.filter(p=>p.estado==='cerrada').reduce((s,p)=>s+p.totalInvertido,0);
   const totPnl = filtered.reduce((s,p)=>s+p.pnlUSD,0);
-  const totPct = totInv>0?(totPnl/totInv)*100:0;
+  const totPct = totInvAbiertas>0?(totPnl/totInvAbiertas)*100:0;
   const pc2 = totPnl>=0?'pnl-pos':'pnl-neg';
+  const invLabel = totInvCerradas>0
+    ? `<span title="Abiertas: ${fmt$(totInvAbiertas)} · Cerradas: ${fmt$(totInvCerradas)}">${fmt$(totInvAbiertas)} <span class="ppp-hint">act.</span></span>`
+    : fmt$(totInvAbiertas);
   document.getElementById('tfoot').innerHTML = `<tr>
     <td colspan="9" class="total-label">Total filtrado (${filtered.length})</td>
-    <td>${fmt$(totInv)}</td>
+    <td>${invLabel}</td>
     <td class="${pc2}">${fmtPct(totPct)}</td>
     <td class="${pc2}">${totPnl>=0?'+':'-'}${fmt$(totPnl)}</td>
     <td></td>
@@ -772,31 +776,39 @@ function clearAll(){
 
 // ── Cotizaciones ──
 async function fetchQuotes(){
-  const tickers=[...new Set(positions.filter(p=>p.estado==='abierta').map(p=>p.ticker))];
-  if(!tickers.length){ document.getElementById('quote-status').textContent='Sin posiciones abiertas'; return; }
+  // Incluir todos los tickers (abiertos para precio live, cerrados para info)
+  const tickers=[...new Set(positions.map(p=>p.ticker))];
+  if(!tickers.length){ document.getElementById('quote-status').textContent='Sin posiciones'; return; }
   const qs=document.getElementById('quote-status');
   qs.textContent='Actualizando…'; qs.className='quote-status loading';
-  // Intenta el endpoint del proyecto original o un proxy CORS genérico
-  const PROXY = 'https://query1.finance.yahoo.com/v8/finance/chart/';
+
+  // Yahoo Finance bloquea CORS directo desde el browser.
+  // Usamos allorigins.win como proxy transparente del lado servidor.
+  const YF_BASE = 'https://query1.finance.yahoo.com/v8/finance/chart/';
+  const PROXY   = 'https://api.allorigins.win/raw?url=';
+
   let ok=0, fail=0;
   for(const ticker of tickers){
     try {
-      const url=`${PROXY}${encodeURIComponent(ticker)}?interval=1d&range=1d`;
-      const r=await fetch(url,{headers:{'Accept':'application/json'}});
+      const target = encodeURIComponent(`${YF_BASE}${encodeURIComponent(ticker)}?interval=1d&range=1d`);
+      const r = await fetch(PROXY + target);
       if(!r.ok) throw new Error('HTTP '+r.status);
-      const data=await r.json();
-      const meta=data?.chart?.result?.[0]?.meta;
+      const data = await r.json();
+      const meta = data?.chart?.result?.[0]?.meta;
       if(meta?.regularMarketPrice){
-        liveQuotes[ticker]={price:meta.regularMarketPrice, pct:meta.regularMarketChangePercent??null};
-        // Actualizar valorActual en la posición
-        positions.filter(p=>p.ticker===ticker).forEach(p=>{ p.valorActual=meta.regularMarketPrice; });
+        const price = meta.regularMarketPrice;
+        const pct   = meta.regularMarketChangePercent ?? null;
+        liveQuotes[ticker] = { price, pct };
+        // Actualizar valorActual persistido en todas las posiciones de ese ticker
+        positions.filter(p=>p.ticker===ticker).forEach(p=>{ p.valorActual = price; });
         ok++;
-      }
-    } catch(e){ fail++; }
+      } else { fail++; }
+    } catch(e){ fail++; console.warn('Quote fail:', ticker, e.message); }
   }
   if(ok>0) saveToStorage();
-  qs.textContent=ok>0?`${ok} actualizadas${fail?' · '+fail+' fallidas':''}`:fail>0?`Error CORS (${fail})`:' ';
-  qs.className=ok>0?'quote-status ok':fail>0?'quote-status error':'quote-status';
+  qs.textContent = ok>0 ? `${ok} actualizada${ok!==1?'s':''}`+(fail?` · ${fail} fallida${fail!==1?'s':''}` :'')
+                        : fail>0 ? `Sin respuesta (${fail} ticker${fail!==1?'s':''})` : '';
+  qs.className = ok>0 ? 'quote-status ok' : fail>0 ? 'quote-status error' : 'quote-status';
   render();
 }
 
