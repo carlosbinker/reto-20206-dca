@@ -775,40 +775,111 @@ function clearAll(){
 }
 
 // ── Cotizaciones ──
-async function fetchQuotes(){
-  // Incluir todos los tickers (abiertos para precio live, cerrados para info)
-  const tickers=[...new Set(positions.map(p=>p.ticker))];
-  if(!tickers.length){ document.getElementById('quote-status').textContent='Sin posiciones'; return; }
-  const qs=document.getElementById('quote-status');
-  qs.textContent='Actualizando…'; qs.className='quote-status loading';
+// Estrategia en cascada: 3 fuentes independientes.
+// El problema central es CORS: Yahoo bloquea requests directas del browser.
+// Solución: proxies que hacen la request desde el servidor con los headers correctos.
 
-  // Yahoo Finance bloquea CORS directo desde el browser.
-  // Usamos allorigins.win como proxy transparente del lado servidor.
-  const YF_BASE = 'https://query1.finance.yahoo.com/v8/finance/chart/';
-  const PROXY   = 'https://api.allorigins.win/raw?url=';
-
-  let ok=0, fail=0;
-  for(const ticker of tickers){
+// Fuente 1: Yahoo Finance v8 vía corsproxy.io (envía headers de browser real)
+async function tryYahooV8(ticker) {
+  const endpoints = [
+    `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`,
+    `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`,
+  ];
+  for (const ep of endpoints) {
     try {
-      const target = encodeURIComponent(`${YF_BASE}${encodeURIComponent(ticker)}?interval=1d&range=1d`);
-      const r = await fetch(PROXY + target);
-      if(!r.ok) throw new Error('HTTP '+r.status);
+      const r = await fetch('https://corsproxy.io/?' + encodeURIComponent(ep), {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Accept': 'application/json, */*',
+          'Referer': 'https://finance.yahoo.com/',
+        },
+        signal: AbortSignal.timeout(8000)
+      });
+      if (!r.ok) continue;
       const data = await r.json();
       const meta = data?.chart?.result?.[0]?.meta;
-      if(meta?.regularMarketPrice){
-        const price = meta.regularMarketPrice;
-        const pct   = meta.regularMarketChangePercent ?? null;
-        liveQuotes[ticker] = { price, pct };
-        // Actualizar valorActual persistido en todas las posiciones de ese ticker
-        positions.filter(p=>p.ticker===ticker).forEach(p=>{ p.valorActual = price; });
-        ok++;
-      } else { fail++; }
-    } catch(e){ fail++; console.warn('Quote fail:', ticker, e.message); }
+      if (meta?.regularMarketPrice) {
+        return { price: meta.regularMarketPrice, pct: meta.regularMarketChangePercent ?? null, src: 'Yahoo' };
+      }
+    } catch(e) { /* siguiente */ }
   }
-  if(ok>0) saveToStorage();
-  qs.textContent = ok>0 ? `${ok} actualizada${ok!==1?'s':''}`+(fail?` · ${fail} fallida${fail!==1?'s':''}` :'')
-                        : fail>0 ? `Sin respuesta (${fail} ticker${fail!==1?'s':''})` : '';
-  qs.className = ok>0 ? 'quote-status ok' : fail>0 ? 'quote-status error' : 'quote-status';
+  return null;
+}
+
+// Fuente 2: Stooq.com — cubre ETFs y acciones US, sin necesidad de API key.
+// Retorna CSV con columna "Close". Usamos corsproxy para resolver CORS.
+async function tryStooq(ticker) {
+  try {
+    const url = `https://stooq.com/q/l/?s=${encodeURIComponent(ticker.toLowerCase())}&f=sd2t2ohlcvn&h&e=csv`;
+    const r = await fetch('https://corsproxy.io/?' + encodeURIComponent(url), {
+      signal: AbortSignal.timeout(7000)
+    });
+    if (!r.ok) return null;
+    const text = await r.text();
+    // CSV: Symbol,Date,Time,Open,High,Low,Close,Volume,Name
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) return null;
+    const cols = lines[1].split(',');
+    const close = parseFloat(cols[6]);
+    if (!isNaN(close) && close > 0) {
+      return { price: close, pct: null, src: 'Stooq' };
+    }
+  } catch(e) {}
+  return null;
+}
+
+// Fuente 3: Yahoo Finance v8 vía allorigins como segundo proxy (diferente ruta de red)
+async function tryYahooAltProxy(ticker) {
+  try {
+    const ep = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`;
+    const r = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(ep), {
+      signal: AbortSignal.timeout(8000)
+    });
+    if (!r.ok) return null;
+    const data = await r.json();
+    const meta = data?.chart?.result?.[0]?.meta;
+    if (meta?.regularMarketPrice) {
+      return { price: meta.regularMarketPrice, pct: meta.regularMarketChangePercent ?? null, src: 'Yahoo*' };
+    }
+  } catch(e) {}
+  return null;
+}
+
+async function fetchOneTicker(ticker) {
+  // Intentar en cascada
+  return (await tryYahooV8(ticker))
+      || (await tryStooq(ticker))
+      || (await tryYahooAltProxy(ticker));
+}
+
+async function fetchQuotes() {
+  const tickers = [...new Set(positions.map(p => p.ticker))];
+  if (!tickers.length) { document.getElementById('quote-status').textContent = 'Sin posiciones'; return; }
+  const qs = document.getElementById('quote-status');
+  qs.textContent = 'Actualizando…'; qs.className = 'quote-status loading';
+
+  // Procesar todos en paralelo para mayor velocidad
+  const results = await Promise.all(tickers.map(async ticker => ({ ticker, result: await fetchOneTicker(ticker) })));
+
+  let ok = 0, fail = 0, sources = {};
+  results.forEach(({ ticker, result }) => {
+    if (result) {
+      liveQuotes[ticker] = result;
+      positions.filter(p => p.ticker === ticker).forEach(p => { p.valorActual = result.price; });
+      sources[result.src] = (sources[result.src] || 0) + 1;
+      ok++;
+    } else {
+      fail++;
+      console.warn('[Reto DCA] Sin precio:', ticker);
+    }
+  });
+
+  if (ok > 0) saveToStorage();
+  const srcLabel = Object.entries(sources).map(([k, v]) => `${v} vía ${k}`).join(' · ');
+  qs.textContent = ok > 0
+    ? `${ok} actualizada${ok !== 1 ? 's' : ''}${srcLabel ? '  (' + srcLabel + ')' : ''}` + (fail ? `  ·  ${fail} sin datos` : '')
+    : `Sin respuesta (${fail} ticker${fail !== 1 ? 's' : ''})`;
+  qs.className = ok > 0 ? 'quote-status ok' : 'quote-status error';
   render();
 }
 
