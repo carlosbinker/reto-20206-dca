@@ -377,6 +377,23 @@
         <label>Nombre del reto</label>
         <input id="cfg-nombre" type="text" placeholder="Mi Reto DCA 2025">
       </div>
+      <div class="config-group" style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border);">
+        <label>URL Google Apps Script (proxy de cotizaciones)</label>
+        <input id="cfg-gas" type="url" placeholder="https://script.google.com/macros/s/…/exec" style="font-size:11px;">
+        <div style="margin-top:6px;font-size:10px;color:var(--text-dim);">
+          Necesario para tickers que Stooq no cubre (UVIX, AMZU, AGQ, KORU, etc.).<br>
+          <span id="gas-link-btn" style="color:var(--green);cursor:pointer;text-decoration:underline;" onclick="document.getElementById('gas-instructions').classList.toggle('hidden')">Ver instrucciones para crear el script →</span>
+        </div>
+        <div id="gas-instructions" class="hidden" style="margin-top:10px;padding:12px;background:var(--bg);border:1px solid var(--border2);font-size:10.5px;line-height:1.7;color:var(--text);">
+          <strong style="color:var(--yellow);letter-spacing:0.06em;">CÓMO CREAR TU PROXY EN 5 MINUTOS</strong><br><br>
+          1. Ir a <strong>script.google.com</strong> → "Nuevo proyecto"<br>
+          2. Borrar el contenido y pegar el código del archivo <strong>gas-proxy.js</strong> que se descarga junto con esta app<br>
+          3. Menú <strong>Implementar → Nueva implementación</strong><br>
+          4. Tipo: <strong>Aplicación web</strong> · Ejecutar como: <strong>Yo</strong> · Acceso: <strong>Cualquier usuario</strong><br>
+          5. Copiar la URL generada y pegarla arriba<br><br>
+          <span style="color:var(--text-dim);">El script es tuyo, corre en tu cuenta de Google, y llama a Yahoo Finance desde el servidor de Google (sin restricciones CORS).</span>
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeConfig()">Cancelar</button>
@@ -696,14 +713,16 @@ function deletePos(id){
 
 // ── Config ──
 function openConfig() {
-  document.getElementById('cfg-capital').value=config.capital;
-  document.getElementById('cfg-nombre').value=config.nombre||'';
+  document.getElementById('cfg-capital').value = config.capital;
+  document.getElementById('cfg-nombre').value  = config.nombre || '';
+  document.getElementById('cfg-gas').value     = config.gasUrl || '';
   document.getElementById('config-overlay').classList.add('open');
 }
 function closeConfig(){ document.getElementById('config-overlay').classList.remove('open'); }
 function saveConfig(){
-  config.capital=parseFloat(document.getElementById('cfg-capital').value)||10000;
-  config.nombre=document.getElementById('cfg-nombre').value.trim()||'Reto DCA';
+  config.capital = parseFloat(document.getElementById('cfg-capital').value) || 10000;
+  config.nombre  = document.getElementById('cfg-nombre').value.trim() || 'Reto DCA';
+  config.gasUrl  = document.getElementById('cfg-gas').value.trim();
   saveToStorage();
   closeConfig();
   render();
@@ -775,51 +794,46 @@ function clearAll(){
 }
 
 // ── Cotizaciones ──
-// Estrategia en cascada: 3 fuentes independientes.
-// El problema central es CORS: Yahoo bloquea requests directas del browser.
-// Solución: proxies que hacen la request desde el servidor con los headers correctos.
+// El browser no puede llamar a Yahoo Finance directamente (CORS).
+// Solución definitiva: Google Apps Script actúa como proxy propio del usuario.
+// Fallback: Stooq vía fetch directo (tiene CORS abierto nativamente para CSV).
 
-// Fuente 1: Yahoo Finance v8 vía corsproxy.io (envía headers de browser real)
-async function tryYahooV8(ticker) {
-  const endpoints = [
-    `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`,
-    `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`,
-  ];
-  for (const ep of endpoints) {
-    try {
-      const r = await fetch('https://corsproxy.io/?' + encodeURIComponent(ep), {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-          'Accept': 'application/json, */*',
-          'Referer': 'https://finance.yahoo.com/',
-        },
-        signal: AbortSignal.timeout(8000)
-      });
-      if (!r.ok) continue;
-      const data = await r.json();
-      const meta = data?.chart?.result?.[0]?.meta;
-      if (meta?.regularMarketPrice) {
-        return { price: meta.regularMarketPrice, pct: meta.regularMarketChangePercent ?? null, src: 'Yahoo' };
-      }
-    } catch(e) { /* siguiente */ }
-  }
-  return null;
+// URL del Google Apps Script del usuario — se configura desde el panel Datos/Export
+function getGASUrl() {
+  return config.gasUrl || '';
 }
 
-// Fuente 2: Stooq.com — cubre ETFs y acciones US, sin necesidad de API key.
-// Retorna CSV con columna "Close". Usamos corsproxy para resolver CORS.
+// Fuente 1: Google Apps Script (proxy propio — llama a Yahoo con headers correctos)
+// El GAS recibe ?symbols=AAPL,UVIX,... y devuelve JSON con precios
+async function tryGAS(tickers) {
+  const url = getGASUrl();
+  if (!url) return {};
+  try {
+    const r = await fetch(url + '?symbols=' + encodeURIComponent(tickers.join(',')), {
+      signal: AbortSignal.timeout(15000)
+    });
+    if (!r.ok) return {};
+    const data = await r.json();
+    // data es un objeto { AAPL: { price, pct }, UVIX: { price, pct }, ... }
+    return data || {};
+  } catch(e) {
+    console.warn('[GAS] Error:', e.message);
+    return {};
+  }
+}
+
+// Fuente 2: Stooq — tiene CORS abierto nativamente, NO necesita proxy
+// Cubre acciones y ETFs US. Formato CSV directo.
 async function tryStooq(ticker) {
   try {
     const url = `https://stooq.com/q/l/?s=${encodeURIComponent(ticker.toLowerCase())}&f=sd2t2ohlcvn&h&e=csv`;
-    const r = await fetch('https://corsproxy.io/?' + encodeURIComponent(url), {
-      signal: AbortSignal.timeout(7000)
-    });
+    const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
     if (!r.ok) return null;
     const text = await r.text();
-    // CSV: Symbol,Date,Time,Open,High,Low,Close,Volume,Name
     const lines = text.trim().split('\n');
     if (lines.length < 2) return null;
     const cols = lines[1].split(',');
+    // CSV header: Symbol,Date,Time,Open,High,Low,Close,Volume,Name
     const close = parseFloat(cols[6]);
     if (!isNaN(close) && close > 0) {
       return { price: close, pct: null, src: 'Stooq' };
@@ -828,57 +842,57 @@ async function tryStooq(ticker) {
   return null;
 }
 
-// Fuente 3: Yahoo Finance v8 vía allorigins como segundo proxy (diferente ruta de red)
-async function tryYahooAltProxy(ticker) {
-  try {
-    const ep = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`;
-    const r = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(ep), {
-      signal: AbortSignal.timeout(8000)
-    });
-    if (!r.ok) return null;
-    const data = await r.json();
-    const meta = data?.chart?.result?.[0]?.meta;
-    if (meta?.regularMarketPrice) {
-      return { price: meta.regularMarketPrice, pct: meta.regularMarketChangePercent ?? null, src: 'Yahoo*' };
-    }
-  } catch(e) {}
-  return null;
-}
-
-async function fetchOneTicker(ticker) {
-  // Intentar en cascada
-  return (await tryYahooV8(ticker))
-      || (await tryStooq(ticker))
-      || (await tryYahooAltProxy(ticker));
-}
-
 async function fetchQuotes() {
   const tickers = [...new Set(positions.map(p => p.ticker))];
   if (!tickers.length) { document.getElementById('quote-status').textContent = 'Sin posiciones'; return; }
   const qs = document.getElementById('quote-status');
   qs.textContent = 'Actualizando…'; qs.className = 'quote-status loading';
 
-  // Procesar todos en paralelo para mayor velocidad
-  const results = await Promise.all(tickers.map(async ticker => ({ ticker, result: await fetchOneTicker(ticker) })));
-
+  let pending = [...tickers];
   let ok = 0, fail = 0, sources = {};
-  results.forEach(({ ticker, result }) => {
-    if (result) {
-      liveQuotes[ticker] = result;
-      positions.filter(p => p.ticker === ticker).forEach(p => { p.valorActual = result.price; });
-      sources[result.src] = (sources[result.src] || 0) + 1;
-      ok++;
-    } else {
-      fail++;
-      console.warn('[Reto DCA] Sin precio:', ticker);
-    }
-  });
+
+  // Paso 1: GAS (si está configurado) — resuelve todos de una sola vez
+  if (getGASUrl()) {
+    qs.textContent = 'Consultando Google Apps Script…';
+    const gasResult = await tryGAS(tickers);
+    const gasKeys = Object.keys(gasResult);
+    gasKeys.forEach(ticker => {
+      const item = gasResult[ticker];
+      if (item?.price) {
+        liveQuotes[ticker] = { price: item.price, pct: item.pct ?? null, src: 'GAS/Yahoo' };
+        positions.filter(p => p.ticker === ticker).forEach(p => { p.valorActual = item.price; });
+        sources['GAS/Yahoo'] = (sources['GAS/Yahoo'] || 0) + 1;
+        ok++;
+      }
+    });
+    pending = tickers.filter(t => !gasResult[t]?.price);
+  }
+
+  // Paso 2: Stooq directo para los que no resolvió GAS (o si no hay GAS configurado)
+  if (pending.length) {
+    qs.textContent = `Consultando Stooq (${pending.length} ticker${pending.length !== 1 ? 's' : ''})…`;
+    const stooqResults = await Promise.all(
+      pending.map(async ticker => ({ ticker, result: await tryStooq(ticker) }))
+    );
+    stooqResults.forEach(({ ticker, result }) => {
+      if (result) {
+        liveQuotes[ticker] = result;
+        positions.filter(p => p.ticker === ticker).forEach(p => { p.valorActual = result.price; });
+        sources['Stooq'] = (sources['Stooq'] || 0) + 1;
+        ok++;
+      } else {
+        fail++;
+        console.warn('[Reto DCA] Sin precio para:', ticker);
+      }
+    });
+  }
 
   if (ok > 0) saveToStorage();
   const srcLabel = Object.entries(sources).map(([k, v]) => `${v} vía ${k}`).join(' · ');
+  const gasHint  = !getGASUrl() ? ' · Configurá GAS para mayor cobertura' : '';
   qs.textContent = ok > 0
-    ? `${ok} actualizada${ok !== 1 ? 's' : ''}${srcLabel ? '  (' + srcLabel + ')' : ''}` + (fail ? `  ·  ${fail} sin datos` : '')
-    : `Sin respuesta (${fail} ticker${fail !== 1 ? 's' : ''})`;
+    ? `${ok} actualizada${ok !== 1 ? 's' : ''} (${srcLabel})` + (fail ? ` · ${fail} sin datos` : '')
+    : `Sin respuesta (${fail} ticker${fail !== 1 ? 's' : ''})${gasHint}`;
   qs.className = ok > 0 ? 'quote-status ok' : 'quote-status error';
   render();
 }
