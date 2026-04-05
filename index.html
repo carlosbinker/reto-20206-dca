@@ -44,6 +44,16 @@
   .kpi-pct{font-family:var(--sans);font-size:12px;font-weight:400;opacity:0.75;}
   .kpi-pct.positive{color:var(--green);}.kpi-pct.negative{color:var(--red);}
 
+  /* Tooltips en KPIs */
+  .kpi{cursor:help;}
+  .kpi .tooltip{display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
+    background:#1a2535;border:1px solid var(--border2);color:var(--text);font-size:10.5px;font-weight:300;
+    padding:8px 12px;white-space:nowrap;z-index:100;line-height:1.6;pointer-events:none;
+    box-shadow:0 4px 16px rgba(0,0,0,0.5);}
+  .kpi .tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);
+    border:5px solid transparent;border-top-color:#1a2535;}
+  .kpi:hover .tooltip{display:block;}
+
   .toolbar{display:flex;gap:10px;margin-bottom:16px;align-items:center;justify-content:space-between;}
   .toolbar-left{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
   .btn{font-family:var(--mono);font-size:10.5px;letter-spacing:0.07em;font-weight:400;padding:8px 16px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);cursor:pointer;text-transform:uppercase;transition:all 0.15s;}
@@ -211,12 +221,42 @@
 
   <!-- KPIs -->
   <div class="kpi-grid" id="kpi-grid">
-    <div class="kpi neutral"><div class="kpi-label">Capital Inicial</div><div class="kpi-value info" id="kpi-capital">$0</div><div class="kpi-sub" id="kpi-capital-sub">Base del reto</div></div>
-    <div class="kpi info"><div class="kpi-label">Invertido Activo</div><div class="kpi-value info" id="kpi-inv">$0</div><div class="kpi-sub" id="kpi-inv-sub">— pos. abiertas</div></div>
-    <div class="kpi neutral"><div class="kpi-label">Liquidez</div><div class="kpi-value" id="kpi-liq">—</div><div class="kpi-sub" id="kpi-liq-sub">—</div></div>
-    <div class="kpi info"><div class="kpi-label">Portfolio Total</div><div class="kpi-value info" id="kpi-total">$0</div><div class="kpi-sub">Capital + PnL abierto</div></div>
-    <div class="kpi neutral"><div class="kpi-label">PnL Abierto</div><div class="kpi-value-row"><span class="kpi-value" id="kpi-pnl">$0</span><span class="kpi-pct" id="kpi-pnl-pct"></span></div><div class="kpi-sub" id="kpi-pnl-sub">Posiciones abiertas</div></div>
-    <div class="kpi neutral"><div class="kpi-label">Ganancia Realizada</div><div class="kpi-value-row"><span class="kpi-value" id="kpi-gz">$0</span><span class="kpi-pct" id="kpi-gz-pct"></span></div><div class="kpi-sub" id="kpi-gz-sub">Posiciones cerradas</div></div>
+    <div class="kpi neutral">
+      <div class="tooltip">Monto de capital definido<br>como base del reto.<br>No cambia nunca.</div>
+      <div class="kpi-label">Capital Inicial</div>
+      <div class="kpi-value info" id="kpi-capital">$0</div>
+      <div class="kpi-sub" id="kpi-capital-sub">Base del reto</div>
+    </div>
+    <div class="kpi info">
+      <div class="tooltip">Suma del total invertido<br>en todas las posiciones<br><strong>abiertas</strong> actualmente.</div>
+      <div class="kpi-label">Invertido Activo</div>
+      <div class="kpi-value info" id="kpi-inv">$0</div>
+      <div class="kpi-sub" id="kpi-inv-sub">— pos. abiertas</div>
+    </div>
+    <div class="kpi neutral">
+      <div class="tooltip">Capital disponible sin invertir.<br>= Capital inicial − Invertido activo<br>+ Ganancias realizadas.<br>% sobre capital base + realizadas.</div>
+      <div class="kpi-label">Liquidez</div>
+      <div class="kpi-value" id="kpi-liq">—</div>
+      <div class="kpi-sub" id="kpi-liq-sub">—</div>
+    </div>
+    <div class="kpi info">
+      <div class="tooltip">Valor total actual del portfolio.<br>= Capital inicial + PnL abierto.<br>Refleja cuánto valdría todo<br>si cerraras las posiciones hoy.</div>
+      <div class="kpi-label">Portfolio Total</div>
+      <div class="kpi-value info" id="kpi-total">$0</div>
+      <div class="kpi-sub">Capital + PnL abierto</div>
+    </div>
+    <div class="kpi neutral">
+      <div class="tooltip">Ganancia/pérdida no realizada<br>de posiciones <strong>abiertas</strong>.<br>= (Precio actual − PPP) × unidades.<br>% sobre el invertido activo.</div>
+      <div class="kpi-label">PnL Abierto</div>
+      <div class="kpi-value-row"><span class="kpi-value" id="kpi-pnl">$0</span><span class="kpi-pct" id="kpi-pnl-pct"></span></div>
+      <div class="kpi-sub" id="kpi-pnl-sub">Posiciones abiertas</div>
+    </div>
+    <div class="kpi neutral">
+      <div class="tooltip">Ganancia/pérdida efectivamente<br>realizada en posiciones <strong>cerradas</strong>.<br>= (Precio venta − PPP) × unidades.<br>% sobre capital base + realizadas.</div>
+      <div class="kpi-label">Ganancia Realizada</div>
+      <div class="kpi-value-row"><span class="kpi-value" id="kpi-gz">$0</span><span class="kpi-pct" id="kpi-gz-pct"></span></div>
+      <div class="kpi-sub" id="kpi-gz-sub">Posiciones cerradas</div>
+    </div>
   </div>
 
   <!-- Data panel -->
