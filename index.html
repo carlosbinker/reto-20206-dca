@@ -44,15 +44,17 @@
   .kpi-pct{font-family:var(--sans);font-size:12px;font-weight:400;opacity:0.75;}
   .kpi-pct.positive{color:var(--green);}.kpi-pct.negative{color:var(--red);}
 
-  /* Tooltips en KPIs */
+  /* Tooltips en KPIs — flotante global, evita overflow:hidden */
   .kpi{cursor:help;}
-  .kpi .tooltip{display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
-    background:#1a2535;border:1px solid var(--border2);color:var(--text);font-size:10.5px;font-weight:300;
-    padding:8px 12px;white-space:nowrap;z-index:100;line-height:1.6;pointer-events:none;
-    box-shadow:0 4px 16px rgba(0,0,0,0.5);}
-  .kpi .tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);
+  #kpi-tooltip{
+    display:none;position:fixed;z-index:9000;
+    background:#1a2535;border:1px solid var(--border2);
+    color:var(--text);font-size:10.5px;font-weight:300;
+    padding:9px 13px;line-height:1.7;pointer-events:none;
+    box-shadow:0 4px 20px rgba(0,0,0,0.6);max-width:260px;
+  }
+  #kpi-tooltip::after{content:'';position:absolute;top:100%;left:20px;
     border:5px solid transparent;border-top-color:#1a2535;}
-  .kpi:hover .tooltip{display:block;}
 
   .toolbar{display:flex;gap:10px;margin-bottom:16px;align-items:center;justify-content:space-between;}
   .toolbar-left{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
@@ -197,6 +199,7 @@
 </style>
 </head>
 <body>
+<div id="kpi-tooltip"></div>
 <div class="app">
 
   <header>
@@ -221,38 +224,32 @@
 
   <!-- KPIs -->
   <div class="kpi-grid" id="kpi-grid">
-    <div class="kpi neutral">
-      <div class="tooltip">Monto de capital definido<br>como base del reto.<br>No cambia nunca.</div>
+    <div class="kpi neutral" data-tip="Monto fijo definido al inicio del reto.&#10;No cambia nunca. Es la base&#10;de todos los cálculos de liquidez.">
       <div class="kpi-label">Capital Inicial</div>
       <div class="kpi-value info" id="kpi-capital">$0</div>
       <div class="kpi-sub" id="kpi-capital-sub">Base del reto</div>
     </div>
-    <div class="kpi info">
-      <div class="tooltip">Suma del total invertido<br>en todas las posiciones<br><strong>abiertas</strong> actualmente.</div>
+    <div class="kpi info" data-tip="Suma del total invertido&#10;en posiciones ABIERTAS.&#10;= Σ (unidades × PPP) por posición abierta.">
       <div class="kpi-label">Invertido Activo</div>
       <div class="kpi-value info" id="kpi-inv">$0</div>
       <div class="kpi-sub" id="kpi-inv-sub">— pos. abiertas</div>
     </div>
-    <div class="kpi neutral">
-      <div class="tooltip">Capital disponible sin invertir.<br>= Capital inicial − Invertido activo<br>+ Ganancias realizadas.<br>% sobre capital base + realizadas.</div>
+    <div class="kpi neutral" data-tip="Capital disponible sin invertir.&#10;= Capital inicial&#10;− Invertido activo&#10;+ Ganancias realizadas.&#10;% = Liquidez ÷ (Capital + Realizadas).">
       <div class="kpi-label">Liquidez</div>
       <div class="kpi-value" id="kpi-liq">—</div>
       <div class="kpi-sub" id="kpi-liq-sub">—</div>
     </div>
-    <div class="kpi info">
-      <div class="tooltip">Valor total actual del portfolio.<br>= Capital inicial + PnL abierto.<br>Refleja cuánto valdría todo<br>si cerraras las posiciones hoy.</div>
+    <div class="kpi info" data-tip="Valor total actual del portfolio.&#10;= Capital inicial + PnL abierto.&#10;Cuánto valdría todo si cerraras&#10;las posiciones abiertas hoy.">
       <div class="kpi-label">Portfolio Total</div>
       <div class="kpi-value info" id="kpi-total">$0</div>
       <div class="kpi-sub">Capital + PnL abierto</div>
     </div>
-    <div class="kpi neutral">
-      <div class="tooltip">Ganancia/pérdida no realizada<br>de posiciones <strong>abiertas</strong>.<br>= (Precio actual − PPP) × unidades.<br>% sobre el invertido activo.</div>
+    <div class="kpi neutral" data-tip="Ganancia/pérdida NO realizada.&#10;Solo posiciones ABIERTAS.&#10;= Σ (precio actual − PPP) × unidades.&#10;% = PnL ÷ Invertido activo.">
       <div class="kpi-label">PnL Abierto</div>
       <div class="kpi-value-row"><span class="kpi-value" id="kpi-pnl">$0</span><span class="kpi-pct" id="kpi-pnl-pct"></span></div>
       <div class="kpi-sub" id="kpi-pnl-sub">Posiciones abiertas</div>
     </div>
-    <div class="kpi neutral">
-      <div class="tooltip">Ganancia/pérdida efectivamente<br>realizada en posiciones <strong>cerradas</strong>.<br>= (Precio venta − PPP) × unidades.<br>% sobre capital base + realizadas.</div>
+    <div class="kpi neutral" data-tip="Ganancia/pérdida REALIZADA.&#10;Solo posiciones CERRADAS.&#10;= Σ (precio venta − PPP) × unidades.&#10;% = Realizadas ÷ (Capital + Realizadas).">
       <div class="kpi-label">Ganancia Realizada</div>
       <div class="kpi-value-row"><span class="kpi-value" id="kpi-gz">$0</span><span class="kpi-pct" id="kpi-gz-pct"></span></div>
       <div class="kpi-sub" id="kpi-gz-sub">Posiciones cerradas</div>
@@ -954,6 +951,31 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){closeModal();close
 loadFromStorage();
 render();
 updateStorageInfo();
+
+// ── Tooltips KPI ──
+(function(){
+  const tip = document.getElementById('kpi-tooltip');
+  document.querySelectorAll('.kpi[data-tip]').forEach(el => {
+    el.addEventListener('mouseenter', function(e){
+      tip.innerHTML = this.dataset.tip.replace(/&#10;/g,'<br>');
+      tip.style.display = 'block';
+      positionTip(e);
+    });
+    el.addEventListener('mousemove', positionTip);
+    el.addEventListener('mouseleave', function(){
+      tip.style.display = 'none';
+    });
+  });
+  function positionTip(e){
+    const margin = 12;
+    let x = e.clientX + margin;
+    let y = e.clientY - tip.offsetHeight - margin;
+    if(x + tip.offsetWidth > window.innerWidth - 8) x = e.clientX - tip.offsetWidth - margin;
+    if(y < 8) y = e.clientY + margin;
+    tip.style.left = x + 'px';
+    tip.style.top  = y + 'px';
+  }
+})();
 </script>
 </body>
 </html>
