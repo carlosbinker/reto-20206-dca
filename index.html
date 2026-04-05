@@ -586,9 +586,9 @@ function render() {
   // Footer
   const totInvAbiertas = filtered.filter(p=>p.estado==='abierta').reduce((s,p)=>s+p.totalInvertido,0);
   const totInvCerradas = filtered.filter(p=>p.estado==='cerrada').reduce((s,p)=>s+p.totalInvertido,0);
-  const totPnl = filtered.reduce((s,p)=>s+p.pnlUSD,0);
-  const totPct = totInvAbiertas>0?(totPnl/totInvAbiertas)*100:0;
-  const pc2 = totPnl>=0?'pnl-pos':'pnl-neg';
+  const totPnlAbiertas = filtered.filter(p=>p.estado==='abierta').reduce((s,p)=>s+p.pnlUSD,0);
+  const totPct = totInvAbiertas>0?(totPnlAbiertas/totInvAbiertas)*100:0;
+  const pc2 = totPnlAbiertas>=0?'pnl-pos':'pnl-neg';
   const invLabel = totInvCerradas>0
     ? `<span title="Abiertas: ${fmt$(totInvAbiertas)} · Cerradas: ${fmt$(totInvCerradas)}">${fmt$(totInvAbiertas)} <span class="ppp-hint">act.</span></span>`
     : fmt$(totInvAbiertas);
@@ -596,7 +596,7 @@ function render() {
     <td colspan="9" class="total-label">Total filtrado (${filtered.length})</td>
     <td>${invLabel}</td>
     <td class="${pc2}">${fmtPct(totPct)}</td>
-    <td class="${pc2}">${totPnl>=0?'+':'-'}${fmt$(totPnl)}</td>
+    <td class="${pc2}">${totPnlAbiertas>=0?'+':'-'}${fmt$(totPnlAbiertas)}</td>
     <td></td>
   </tr>`;
 }
