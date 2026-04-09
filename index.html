@@ -783,17 +783,30 @@ function exportJSON(){
 }
 
 function exportCSV(){
+  const SEP = ';';
+  const num = (v, dec=2) => (v != null && v !== '' && !isNaN(v)) ? parseFloat(v).toFixed(dec).replace('.',',') : '';
   const rows=[['Ticker','Tramo','Fecha','Unidades','P.Compra','Total Compra','PPP','Valor Actual','P.Venta','PnL%','PnL USD','Estado','Notas']];
   positions.map(calcPos).forEach(p=>{
     p.tramos.forEach((t,i)=>{
-      const tot=t.unidades*t.precio, cur=t.unidades*(p.estado==='cerrada'&&p.pVenta?p.pVenta:p.valorActual), pu=cur-tot;
-      rows.push([p.ticker,`${i+1}° DCA`,t.fecha,t.unidades,t.precio,tot.toFixed(2),p.ppp.toFixed(4),p.valorActual,p.pVenta||'',(pu/tot*100).toFixed(2)+'%',pu.toFixed(2),p.estado,p.notas||'']);
+      const tot = t.unidades * t.precio;
+      const cur = t.unidades * (p.estado==='cerrada' && p.pVenta ? p.pVenta : p.valorActual);
+      const pu  = cur - tot;
+      const pct = tot > 0 ? (pu/tot*100) : 0;
+      rows.push([
+        p.ticker, `${i+1}° DCA`, t.fecha,
+        num(t.unidades,4), num(t.precio,4), num(tot,2),
+        num(p.ppp,4), num(p.valorActual,4),
+        p.pVenta ? num(p.pVenta,4) : '',
+        num(pct,2)+'%', num(pu,2),
+        p.estado, p.notas||''
+      ]);
     });
   });
-  const blob=new Blob(['\uFEFF'+rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n')],{type:'text/csv;charset=utf-8'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=`reto-dca-${new Date().toISOString().split('T')[0]}.csv`;
+  const content = String.fromCharCode(0xFEFF) + rows.map(r=>r.map(c=>`"${c}"`).join(SEP)).join('\n');
+  const blob = new Blob([content],{type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `reto-dca-${new Date().toISOString().split('T')[0]}.csv`;
   a.click(); URL.revokeObjectURL(a.href);
 }
 
