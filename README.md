@@ -20,4 +20,30 @@ El objetivo principal de este desarrollo es [ej: implementar un reloj dinámico 
 - Integración de flujos CI/CD con GitHub y Vercel.
 
 ---
-*Desarrollado por Carlos Alberto Binker 
+*Desarrollado por Carlos Alberto Binker
+
+---
+
+# Challenge 2026
+
+This project is part of a series of technical challenges focused on modern web development and interface optimization.
+
+## 🚀 Challenge Description
+The main objective of this development is [e.g.: implement a dynamic clock with localization, modal event handling and best practices for DOM manipulation].
+
+## 🛠 Technologies Used
+- **HTML5**: Semantic structure.
+- **JavaScript (ES6+)**: Logic, timers (`setInterval`) and event handling.
+- **Vercel**: Continuous deployment and hosting.
+
+## 📁 Project Structure
+- `index.html`: Main entry point and structure.
+- `vercel.json`: Deployment configuration for route optimization (Clean URLs).
+
+## 💡 Key Learnings
+- Handling the `Intl.DateTimeFormat` API for localization (`es-AR`).
+- Optimization of DOM events (event delegation).
+- Integration of CI/CD workflows with GitHub and Vercel.
+
+---
+*Developed by Carlos Alberto Binker 
