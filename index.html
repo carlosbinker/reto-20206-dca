@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Reto DCA</title>
     <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&amp;family=DM+Sans:wght@300;400;500;600&amp;display=swap"
       rel="stylesheet"
     />
     <style>
@@ -955,64 +955,6 @@
         </div>
       </header>
 
-      <!-- KPIs -->
-      <div class="kpi-grid" id="kpi-grid">
-        <div
-          class="kpi neutral"
-          data-tip="Monto fijo definido al inicio del reto.&#10;No cambia nunca. Es la base&#10;de todos los cálculos de liquidez."
-        >
-          <div class="kpi-label">Capital Inicial</div>
-          <div class="kpi-value info" id="kpi-capital">$0</div>
-          <div class="kpi-sub" id="kpi-capital-sub">Base del reto</div>
-        </div>
-        <div
-          class="kpi info"
-          data-tip="Suma del total invertido&#10;en posiciones ABIERTAS.&#10;= Σ (unidades × PPP) por posición abierta."
-        >
-          <div class="kpi-label">Invertido Activo</div>
-          <div class="kpi-value info" id="kpi-inv">$0</div>
-          <div class="kpi-sub" id="kpi-inv-sub">— pos. abiertas</div>
-        </div>
-        <div
-          class="kpi neutral"
-          data-tip="Capital disponible sin invertir.&#10;= Capital inicial&#10;− Invertido activo&#10;+ Ganancias realizadas.&#10;% = Liquidez ÷ (Capital + Realizadas)."
-        >
-          <div class="kpi-label">Liquidez</div>
-          <div class="kpi-value" id="kpi-liq">—</div>
-          <div class="kpi-sub" id="kpi-liq-sub">—</div>
-        </div>
-        <div
-          class="kpi info"
-          data-tip="Valor total actual del portfolio.&#10;= Capital inicial + PnL abierto.&#10;Cuánto valdría todo si cerraras&#10;las posiciones abiertas hoy."
-        >
-          <div class="kpi-label">Portfolio Total</div>
-          <div class="kpi-value info" id="kpi-total">$0</div>
-          <div class="kpi-sub">Capital + PnL abierto</div>
-        </div>
-        <div
-          class="kpi neutral"
-          data-tip="Ganancia/pérdida NO realizada.&#10;Solo posiciones ABIERTAS.&#10;= Σ (precio actual − PPP) × unidades.&#10;% = PnL ÷ Invertido activo."
-        >
-          <div class="kpi-label">PnL Abierto</div>
-          <div class="kpi-value-row">
-            <span class="kpi-value" id="kpi-pnl">$0</span
-            ><span class="kpi-pct" id="kpi-pnl-pct"></span>
-          </div>
-          <div class="kpi-sub" id="kpi-pnl-sub">Posiciones abiertas</div>
-        </div>
-        <div
-          class="kpi neutral"
-          data-tip="Ganancia/pérdida REALIZADA.&#10;Solo posiciones CERRADAS.&#10;= Σ (precio venta − PPP) × unidades.&#10;% = Realizadas ÷ (Capital + Realizadas)."
-        >
-          <div class="kpi-label">Ganancia Realizada</div>
-          <div class="kpi-value-row">
-            <span class="kpi-value" id="kpi-gz">$0</span
-            ><span class="kpi-pct" id="kpi-gz-pct"></span>
-          </div>
-          <div class="kpi-sub" id="kpi-gz-sub">Posiciones cerradas</div>
-        </div>
-      </div>
-
       <!-- Data panel -->
       <div class="data-section" id="data-section">
         <div class="data-section-title">Datos del reto</div>
@@ -1024,6 +966,12 @@
             onclick="document.getElementById('import-file').click()"
           >
             ⬆ Importar JSON
+          </button>
+          <button
+            class="btn"
+            onclick="document.getElementById('import-csv-file').click()"
+          >
+            ⬆ Importar CSV
           </button>
           <button class="btn danger" onclick="clearAll()">✕ Borrar todo</button>
           <button class="btn" onclick="openConfig()">
@@ -1037,378 +985,899 @@
           style="display: none"
           onchange="importJSON(this)"
         />
+        <input
+          type="file"
+          id="import-csv-file"
+          accept=".csv"
+          style="display: none"
+          onchange="importCSV(this)"
+        />
         <div
           style="margin-top: 12px; font-size: 10.5px; color: var(--text-muted)"
           id="data-info"
         ></div>
       </div>
 
-      <!-- Toolbar -->
-      <div class="toolbar">
-        <div class="toolbar-left">
-          <button class="btn primary" onclick="openModal()">
-            + Nueva posición
+      <!-- Data panel HAPI -->
+      <div class="data-section" id="data-section-hapi" style="display: none">
+        <div class="data-section-title">Datos de HAPI</div>
+        <div class="data-actions">
+          <button class="btn" onclick="exportBrokerJSON('hapi')">
+            ⬇ Exportar JSON
           </button>
-          <div class="filter-group">
-            <button
-              class="filter-btn active"
-              data-f="todas"
-              onclick="setFilter('todas', this)"
-            >
-              Todas
-            </button>
-            <button
-              class="filter-btn"
-              data-f="abierta"
-              onclick="setFilter('abierta', this)"
-            >
-              Abiertas
-            </button>
-            <button
-              class="filter-btn"
-              data-f="cerrada"
-              onclick="setFilter('cerrada', this)"
-            >
-              Cerradas
-            </button>
-          </div>
-        </div>
-        <div style="display: flex; gap: 8px; align-items: center">
-          <button class="btn" onclick="toggleDataPanel()">
-            ⚙ Datos / Export
+          <button class="btn" onclick="exportBrokerCSV('hapi')">
+            ⬇ Exportar CSV
           </button>
           <button
             class="btn"
-            onclick="fetchQuotes()"
-            title="Actualizar precios desde Yahoo Finance"
+            onclick="document.getElementById('import-hapi-json').click()"
           >
-            ↺ Cotizaciones
+            ⬆ Importar JSON
           </button>
-          <span id="quote-status" class="quote-status"></span>
-        </div>
-      </div>
-
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th onclick="sortBy('ticker')">
-                Ticker <span class="sort-arrow">↕</span>
-              </th>
-              <th onclick="sortBy('fecha')">
-                Apertura <span class="sort-arrow">↕</span>
-              </th>
-              <th>Estado</th>
-              <th onclick="sortBy('dias')">
-                Días <span class="sort-arrow">↕</span>
-              </th>
-              <th onclick="sortBy('tramos')">
-                Tramos <span class="sort-arrow">↕</span>
-              </th>
-              <th onclick="sortBy('unidades')">
-                Unidades <span class="sort-arrow">↕</span>
-              </th>
-              <th onclick="sortBy('ppp')">
-                PPP <span class="sort-arrow">↕</span>
-              </th>
-              <th onclick="sortBy('valorActual')">
-                Precio actual <span class="sort-arrow">↕</span>
-              </th>
-              <th onclick="sortBy('pVenta')">
-                P. Venta <span class="sort-arrow">↕</span>
-              </th>
-              <th onclick="sortBy('invertido')">
-                Invertido <span class="sort-arrow">↕</span>
-              </th>
-              <th onclick="sortBy('pnl')">
-                PnL % <span class="sort-arrow">↕</span>
-              </th>
-              <th onclick="sortBy('pnlUSD')">
-                PnL USD <span class="sort-arrow">↕</span>
-              </th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="tbody"></tbody>
-          <tfoot id="tfoot"></tfoot>
-        </table>
-      </div>
-    </div>
-
-    <!-- Modal nueva/editar posición -->
-    <div class="modal-overlay" id="modal-overlay">
-      <div class="modal">
-        <div class="modal-header">
-          <span class="modal-title" id="modal-title">Nueva Posición</span>
-          <button class="modal-close" onclick="closeModal()">✕</button>
-        </div>
-        <div class="modal-body">
-          <div class="form-grid">
-            <div class="form-group">
-              <label>Ticker</label>
-              <input
-                id="f-ticker"
-                type="text"
-                placeholder="Ej: AAPL"
-                style="text-transform: uppercase"
-              />
-            </div>
-            <div class="form-group">
-              <label>Estado</label>
-              <select id="f-estado">
-                <option value="abierta">Abierta</option>
-                <option value="cerrada">Cerrada</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Precio Actual (USD)</label>
-              <input
-                id="f-actual"
-                type="number"
-                step="0.0001"
-                placeholder="0.00"
-              />
-            </div>
-            <div class="form-group">
-              <label>Precio Venta (si cerrada)</label>
-              <input id="f-venta" type="number" step="0.0001" placeholder="—" />
-            </div>
-            <div class="form-group full">
-              <label>Notas</label>
-              <input id="f-notas" type="text" placeholder="Opcional" />
-            </div>
-          </div>
-
-          <!-- DCA 1 -->
-          <div class="dca-section dca-s1">
-            <div class="dca-section-header">
-              <span class="dca-section-label">1° DCA</span>
-            </div>
-            <div class="dca-fields">
-              <div class="form-group">
-                <label>Fecha</label><input id="f-d1-fecha" type="date" />
-              </div>
-              <div class="form-group">
-                <label>Unidades</label
-                ><input
-                  id="f-d1-unidades"
-                  type="number"
-                  step="0.0001"
-                  placeholder="0"
-                  oninput="liveCalcPPP()"
-                />
-              </div>
-              <div class="form-group">
-                <label>Precio compra</label
-                ><input
-                  id="f-d1-precio"
-                  type="number"
-                  step="0.0001"
-                  placeholder="0.00"
-                  oninput="liveCalcPPP()"
-                />
-              </div>
-            </div>
-          </div>
-
-          <!-- DCA 2 -->
-          <div class="dca-section dca-s2">
-            <div class="dca-section-header">
-              <span class="dca-section-label">2° DCA</span>
-              <button
-                class="dca-toggle"
-                id="toggle-dca2"
-                onclick="toggleDCA(2)"
-              >
-                + Agregar
-              </button>
-            </div>
-            <div class="dca-fields hidden" id="fields-dca2">
-              <div class="form-group">
-                <label>Fecha</label><input id="f-d2-fecha" type="date" />
-              </div>
-              <div class="form-group">
-                <label>Unidades</label
-                ><input
-                  id="f-d2-unidades"
-                  type="number"
-                  step="0.0001"
-                  placeholder="0"
-                  oninput="liveCalcPPP()"
-                />
-              </div>
-              <div class="form-group">
-                <label>Precio compra</label
-                ><input
-                  id="f-d2-precio"
-                  type="number"
-                  step="0.0001"
-                  placeholder="0.00"
-                  oninput="liveCalcPPP()"
-                />
-              </div>
-            </div>
-          </div>
-
-          <!-- DCA 3 -->
-          <div class="dca-section dca-s3">
-            <div class="dca-section-header">
-              <span class="dca-section-label">3° DCA</span>
-              <button
-                class="dca-toggle"
-                id="toggle-dca3"
-                onclick="toggleDCA(3)"
-              >
-                + Agregar
-              </button>
-            </div>
-            <div class="dca-fields hidden" id="fields-dca3">
-              <div class="form-group">
-                <label>Fecha</label><input id="f-d3-fecha" type="date" />
-              </div>
-              <div class="form-group">
-                <label>Unidades</label
-                ><input
-                  id="f-d3-unidades"
-                  type="number"
-                  step="0.0001"
-                  placeholder="0"
-                  oninput="liveCalcPPP()"
-                />
-              </div>
-              <div class="form-group">
-                <label>Precio compra</label
-                ><input
-                  id="f-d3-precio"
-                  type="number"
-                  step="0.0001"
-                  placeholder="0.00"
-                  oninput="liveCalcPPP()"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div
-            id="ppp-preview"
-            style="
-              display: none;
-              align-items: center;
-              padding: 12px 14px;
-              background: var(--surface2);
-              border: 1px solid var(--border2);
-              margin-top: 16px;
-            "
+          <button
+            class="btn"
+            onclick="document.getElementById('import-hapi-csv').click()"
           >
-            <span class="ppp-label">PPP estimado</span>
-            <span class="ppp-val" id="ppp-val"></span>
-            <span class="ppp-det" id="ppp-det"></span>
-          </div>
+            ⬆ Importar CSV
+          </button>
+          <button class="btn danger" onclick="clearBroker('hapi')">
+            ✕ Borrar todo
+          </button>
+          <button class="btn" onclick="openConfig()">
+            ⚙ Configurar capital
+          </button>
         </div>
-        <div class="modal-footer">
-          <button class="btn" onclick="closeModal()">Cancelar</button>
-          <button class="btn primary" onclick="savePosition()">Guardar</button>
-        </div>
+        <input
+          type="file"
+          id="import-hapi-json"
+          accept=".json"
+          style="display: none"
+          onchange="importBrokerJSON(this, 'hapi')"
+        />
+        <input
+          type="file"
+          id="import-hapi-csv"
+          accept=".csv"
+          style="display: none"
+          onchange="importBrokerCSV(this, 'hapi')"
+        />
+        <div
+          style="margin-top: 12px; font-size: 10.5px; color: var(--text-muted)"
+          id="data-info-hapi"
+        ></div>
       </div>
-    </div>
 
-    <!-- Modal Config -->
-    <div class="modal-overlay" id="config-overlay">
-      <div class="modal" style="width: 400px">
-        <div class="modal-header">
-          <span class="modal-title">Configuración del Reto</span>
-          <button class="modal-close" onclick="closeConfig()">✕</button>
+      <!-- Data panel IBKR -->
+      <div class="data-section" id="data-section-ibkr" style="display: none">
+        <div class="data-section-title">Datos de IBKR</div>
+        <div class="data-actions">
+          <button class="btn" onclick="exportBrokerJSON('ibkr')">
+            ⬇ Exportar JSON
+          </button>
+          <button class="btn" onclick="exportBrokerCSV('ibkr')">
+            ⬇ Exportar CSV
+          </button>
+          <button
+            class="btn"
+            onclick="document.getElementById('import-ibkr-json').click()"
+          >
+            ⬆ Importar JSON
+          </button>
+          <button
+            class="btn"
+            onclick="document.getElementById('import-ibkr-csv').click()"
+          >
+            ⬆ Importar CSV
+          </button>
+          <button class="btn danger" onclick="clearBroker('ibkr')">
+            ✕ Borrar todo
+          </button>
+          <button class="btn" onclick="openConfig()">
+            ⚙ Configurar capital
+          </button>
         </div>
-        <div class="modal-body">
-          <div class="config-group">
-            <label>Capital inicial (USD)</label>
-            <input
-              id="cfg-capital"
-              type="number"
-              step="0.01"
-              placeholder="10000"
-            />
-            <div
-              style="margin-top: 6px; font-size: 10px; color: var(--text-dim)"
-            >
-              Base de cálculo para liquidez y porcentajes.
-            </div>
-          </div>
-          <div class="config-group">
-            <label>Nombre del reto</label>
-            <input id="cfg-nombre" type="text" placeholder="Mi Reto DCA 2025" />
+        <input
+          type="file"
+          id="import-ibkr-json"
+          accept=".json"
+          style="display: none"
+          onchange="importBrokerJSON(this, 'ibkr')"
+        />
+        <input
+          type="file"
+          id="import-ibkr-csv"
+          accept=".csv"
+          style="display: none"
+          onchange="importBrokerCSV(this, 'ibkr')"
+        />
+        <div
+          style="margin-top: 12px; font-size: 10.5px; color: var(--text-muted)"
+          id="data-info-ibkr"
+        ></div>
+      </div>
+
+      <!-- Tabs para brokers -->
+      <div
+        style="
+          margin-bottom: 20px;
+          display: flex;
+          gap: 8px;
+          border-bottom: 1px solid var(--border);
+          padding-bottom: 12px;
+        "
+      >
+        <button
+          class="filter-btn active"
+          data-view="reto"
+          onclick="switchView('reto', this)"
+          style="flex: 0 1 auto"
+        >
+          📈 Reto
+        </button>
+        <button
+          class="filter-btn"
+          data-view="hapi"
+          onclick="switchView('hapi', this)"
+          style="flex: 0 1 auto"
+        >
+          📊 HAPI
+        </button>
+        <button
+          class="filter-btn"
+          data-view="ibkr"
+          onclick="switchView('ibkr', this)"
+          style="flex: 0 1 auto"
+        >
+          📊 IBKR
+        </button>
+      </div>
+
+      <!-- Contenedores de dashboard por vista -->
+      <div id="reto-dashboard" class="dashboard-view">
+        <!-- KPIs Reto -->
+        <div class="kpi-grid" id="kpi-grid">
+          <div
+            class="kpi neutral"
+            data-tip="Monto fijo definido al inicio del reto.&#10;No cambia nunca. Es la base&#10;de todos los cálculos de liquidez."
+          >
+            <div class="kpi-label">Capital Inicial</div>
+            <div class="kpi-value info" id="kpi-capital">$0</div>
+            <div class="kpi-sub" id="kpi-capital-sub">Base del reto</div>
           </div>
           <div
-            class="config-group"
-            style="
-              margin-top: 18px;
-              padding-top: 16px;
-              border-top: 1px solid var(--border);
-            "
+            class="kpi info"
+            data-tip="Suma del total invertido&#10;en posiciones ABIERTAS.&#10;= Σ (unidades × PPP) por posición abierta."
           >
-            <label>URL Google Apps Script (proxy de cotizaciones)</label>
-            <input
-              id="cfg-gas"
-              type="url"
-              placeholder="https://script.google.com/macros/s/…/exec"
-              style="font-size: 11px"
-            />
-            <div
-              style="margin-top: 6px; font-size: 10px; color: var(--text-dim)"
-            >
-              Necesario para tickers que Stooq no cubre (UVIX, AMZU, AGQ, KORU,
-              etc.).<br />
-              <span
-                id="gas-link-btn"
-                style="
-                  color: var(--green);
-                  cursor: pointer;
-                  text-decoration: underline;
-                "
-                onclick="
-                  document
-                    .getElementById('gas-instructions')
-                    .classList.toggle('hidden')
-                "
-                >Ver instrucciones para crear el script →</span
-              >
+            <div class="kpi-label">Invertido Activo</div>
+            <div class="kpi-value info" id="kpi-inv">$0</div>
+            <div class="kpi-sub" id="kpi-inv-sub">— pos. abiertas</div>
+          </div>
+          <div
+            class="kpi neutral"
+            data-tip="Capital disponible sin invertir.&#10;= Capital inicial&#10;− Invertido activo&#10;+ Ganancias realizadas.&#10;% = Liquidez ÷ (Capital + Realizadas)."
+          >
+            <div class="kpi-label">Liquidez</div>
+            <div class="kpi-value" id="kpi-liq">—</div>
+            <div class="kpi-sub" id="kpi-liq-sub">—</div>
+          </div>
+          <div
+            class="kpi info"
+            data-tip="Valor total actual del portfolio.&#10;= Capital inicial + PnL abierto.&#10;Cuánto valdría todo si cerraras&#10;las posiciones abiertas hoy."
+          >
+            <div class="kpi-label">Portfolio Total</div>
+            <div class="kpi-value info" id="kpi-total">$0</div>
+            <div class="kpi-sub">Capital + PnL abierto</div>
+          </div>
+          <div
+            class="kpi neutral"
+            data-tip="Ganancia/pérdida NO realizada.&#10;Solo posiciones ABIERTAS.&#10;= Σ (precio actual − PPP) × unidades.&#10;% = PnL ÷ Invertido activo."
+          >
+            <div class="kpi-label">PnL Abierto</div>
+            <div class="kpi-value-row">
+              <span class="kpi-value" id="kpi-pnl">$0</span
+              ><span class="kpi-pct" id="kpi-pnl-pct"></span>
             </div>
+            <div class="kpi-sub" id="kpi-pnl-sub">Posiciones abiertas</div>
+          </div>
+          <div
+            class="kpi neutral"
+            data-tip="Ganancia/pérdida REALIZADA.&#10;Solo posiciones CERRADAS.&#10;= Σ (precio venta − PPP) × unidades.&#10;% = Realizadas ÷ (Capital + Realizadas)."
+          >
+            <div class="kpi-label">Ganancia Realizada</div>
+            <div class="kpi-value-row">
+              <span class="kpi-value" id="kpi-gz">$0</span
+              ><span class="kpi-pct" id="kpi-gz-pct"></span>
+            </div>
+            <div class="kpi-sub" id="kpi-gz-sub">Posiciones cerradas</div>
+          </div>
+        </div>
+
+        <!-- Toolbar Reto -->
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <button class="btn primary" onclick="openModal()">
+              + Nueva posición
+            </button>
+            <div class="filter-group">
+              <button
+                class="filter-btn active"
+                data-f="todas"
+                onclick="setFilter('todas', this)"
+              >
+                Todas
+              </button>
+              <button
+                class="filter-btn"
+                data-f="abierta"
+                onclick="setFilter('abierta', this)"
+              >
+                Abiertas
+              </button>
+              <button
+                class="filter-btn"
+                data-f="cerrada"
+                onclick="setFilter('cerrada', this)"
+              >
+                Cerradas
+              </button>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center">
+            <button class="btn" onclick="toggleDataPanel()">
+              ⚙ Datos / Export
+            </button>
+            <button
+              class="btn"
+              onclick="fetchQuotes()"
+              title="Actualizar precios"
+            >
+              ↺ Cotizaciones
+            </button>
+            <span id="quote-status" class="quote-status"></span>
+          </div>
+        </div>
+
+        <!-- Tabla Reto -->
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th onclick="sortBy('ticker')">
+                  Ticker <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBy('fecha')">
+                  Apertura <span class="sort-arrow">↕</span>
+                </th>
+                <th>Estado</th>
+                <th onclick="sortBy('dias')">
+                  Días <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBy('tramos')">
+                  Tramos <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBy('unidades')">
+                  Unidades <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBy('ppp')">
+                  PPP <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBy('valorActual')">
+                  Precio actual <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBy('pVenta')">
+                  P. Venta <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBy('invertido')">
+                  Invertido <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBy('pnl')">
+                  PnL % <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBy('pnlUSD')">
+                  PnL USD <span class="sort-arrow">↕</span>
+                </th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+            <tfoot id="tfoot"></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- HAPI Dashboard -->
+      <div id="hapi-dashboard" class="dashboard-view" style="display: none">
+        <!-- KPIs HAPI -->
+        <div class="kpi-grid" id="kpi-grid-hapi">
+          <div
+            class="kpi neutral"
+            data-tip="Capital disponible para HAPI.&#10;Se usa en los cálculos de liquidez y PnL del broker."
+          >
+            <div class="kpi-label">Capital HAPI</div>
+            <div class="kpi-value info" id="kpi-capital-hapi">$0</div>
+            <div class="kpi-sub">Broker HAPI</div>
+          </div>
+          <div
+            class="kpi info"
+            data-tip="Suma del total invertido&#10;en posiciones ABIERTAS.&#10;= Σ (unidades × PPP) por posición abierta."
+          >
+            <div class="kpi-label">Invertido Activo</div>
+            <div class="kpi-value info" id="kpi-inv-hapi">$0</div>
+            <div class="kpi-sub" id="kpi-inv-sub-hapi">pos. abiertas</div>
+          </div>
+          <div
+            class="kpi neutral"
+            data-tip="Capital disponible sin invertir.&#10;= Capital inicial&#10;− Invertido activo&#10;+ Ganancias realizadas.&#10;% = Liquidez ÷ (Capital + Realizadas)."
+          >
+            <div class="kpi-label">Liquidez</div>
+            <div class="kpi-value" id="kpi-liq-hapi">—</div>
+            <div class="kpi-sub" id="kpi-liq-sub-hapi">—</div>
+          </div>
+          <div
+            class="kpi info"
+            data-tip="Valor total actual del portfolio.&#10;= Capital inicial + PnL abierto.&#10;Cuánto valdría todo si cerraras&#10;las posiciones abiertas hoy."
+          >
+            <div class="kpi-label">Portfolio Total</div>
+            <div class="kpi-value info" id="kpi-total-hapi">$0</div>
+            <div class="kpi-sub">Total</div>
+          </div>
+          <div
+            class="kpi neutral"
+            data-tip="Ganancia/pérdida NO realizada.&#10;Solo posiciones ABIERTAS.&#10;= Σ (precio actual − PPP) × unidades.&#10;% = PnL ÷ Invertido activo."
+          >
+            <div class="kpi-label">PnL Abierto</div>
+            <div class="kpi-value-row">
+              <span class="kpi-value" id="kpi-pnl-hapi">$0</span
+              ><span class="kpi-pct" id="kpi-pnl-pct-hapi"></span>
+            </div>
+            <div class="kpi-sub" id="kpi-pnl-sub-hapi">Pos. abiertas</div>
+          </div>
+          <div
+            class="kpi neutral"
+            data-tip="Ganancia/pérdida REALIZADA.&#10;Solo posiciones CERRADAS.&#10;= Σ (precio venta − PPP) × unidades.&#10;% = Realizadas ÷ (Capital + Realizadas)."
+          >
+            <div class="kpi-label">Ganancia Realizada</div>
+            <div class="kpi-value-row">
+              <span class="kpi-value" id="kpi-gz-hapi">$0</span
+              ><span class="kpi-pct" id="kpi-gz-pct-hapi"></span>
+            </div>
+            <div class="kpi-sub" id="kpi-gz-sub-hapi">Pos. cerradas</div>
+          </div>
+        </div>
+
+        <!-- Toolbar HAPI -->
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <button class="btn primary" onclick="openBrokerModal('hapi')">
+              + Nueva posición
+            </button>
+            <div class="filter-group">
+              <button
+                class="filter-btn active"
+                data-f="todas"
+                onclick="setBrokerFilter('hapi', 'todas', this)"
+              >
+                Todas
+              </button>
+              <button
+                class="filter-btn"
+                data-f="abierta"
+                onclick="setBrokerFilter('hapi', 'abierta', this)"
+              >
+                Abiertas
+              </button>
+              <button
+                class="filter-btn"
+                data-f="cerrada"
+                onclick="setBrokerFilter('hapi', 'cerrada', this)"
+              >
+                Cerradas
+              </button>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center">
+            <button class="btn" onclick="toggleDataPanel('hapi')">
+              ⚙ Datos / Export
+            </button>
+            <button
+              class="btn"
+              onclick="fetchQuotes()"
+              title="Actualizar precios"
+            >
+              ↺ Cotizaciones
+            </button>
+            <span id="quote-status" class="quote-status"></span>
+          </div>
+        </div>
+
+        <!-- Tabla HAPI -->
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th onclick="sortBrokerBy('hapi', 'ticker')">
+                  Ticker <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBrokerBy('hapi', 'fecha')">
+                  Apertura <span class="sort-arrow">↕</span>
+                </th>
+                <th>Estado</th>
+                <th onclick="sortBrokerBy('hapi', 'dias')">
+                  Días <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBrokerBy('hapi', 'tramos')">
+                  Tramos <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBrokerBy('hapi', 'unidades')">
+                  Unidades <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBrokerBy('hapi', 'ppp')">
+                  PPP <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBrokerBy('hapi', 'valorActual')">
+                  Precio actual <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBrokerBy('hapi', 'pVenta')">
+                  P. Venta <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBrokerBy('hapi', 'invertido')">
+                  Invertido <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBrokerBy('hapi', 'pnl')">
+                  PnL % <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBrokerBy('hapi', 'pnlUSD')">
+                  PnL USD <span class="sort-arrow">↕</span>
+                </th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-hapi"></tbody>
+            <tfoot id="tfoot-hapi"></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- IBKR Dashboard -->
+      <div id="ibkr-dashboard" class="dashboard-view" style="display: none">
+        <!-- KPIs IBKR -->
+        <div class="kpi-grid" id="kpi-grid-ibkr">
+          <div
+            class="kpi neutral"
+            data-tip="Capital disponible para IBKR.&#10;Se usa en los cálculos de liquidez y PnL del broker."
+          >
+            <div class="kpi-label">Capital IBKR</div>
+            <div class="kpi-value info" id="kpi-capital-ibkr">$0</div>
+            <div class="kpi-sub">Broker IBKR</div>
+          </div>
+          <div
+            class="kpi info"
+            data-tip="Suma del total invertido&#10;en posiciones ABIERTAS.&#10;= Σ (unidades × PPP) por posición abierta."
+          >
+            <div class="kpi-label">Invertido Activo</div>
+            <div class="kpi-value info" id="kpi-inv-ibkr">$0</div>
+            <div class="kpi-sub" id="kpi-inv-sub-ibkr">pos. abiertas</div>
+          </div>
+          <div
+            class="kpi neutral"
+            data-tip="Capital disponible sin invertir.&#10;= Capital inicial&#10;− Invertido activo&#10;+ Ganancias realizadas.&#10;% = Liquidez ÷ (Capital + Realizadas)."
+          >
+            <div class="kpi-label">Liquidez</div>
+            <div class="kpi-value" id="kpi-liq-ibkr">—</div>
+            <div class="kpi-sub" id="kpi-liq-sub-ibkr">—</div>
+          </div>
+          <div
+            class="kpi info"
+            data-tip="Valor total actual del portfolio.&#10;= Capital inicial + PnL abierto.&#10;Cuánto valdría todo si cerraras&#10;las posiciones abiertas hoy."
+          >
+            <div class="kpi-label">Portfolio Total</div>
+            <div class="kpi-value info" id="kpi-total-ibkr">$0</div>
+            <div class="kpi-sub">Total</div>
+          </div>
+          <div
+            class="kpi neutral"
+            data-tip="Ganancia/pérdida NO realizada.&#10;Solo posiciones ABIERTAS.&#10;= Σ (precio actual − PPP) × unidades.&#10;% = PnL ÷ Invertido activo."
+          >
+            <div class="kpi-label">PnL Abierto</div>
+            <div class="kpi-value-row">
+              <span class="kpi-value" id="kpi-pnl-ibkr">$0</span
+              ><span class="kpi-pct" id="kpi-pnl-pct-ibkr"></span>
+            </div>
+            <div class="kpi-sub" id="kpi-pnl-sub-ibkr">Pos. abiertas</div>
+          </div>
+          <div
+            class="kpi neutral"
+            data-tip="Ganancia/pérdida REALIZADA.&#10;Solo posiciones CERRADAS.&#10;= Σ (precio venta − PPP) × unidades.&#10;% = Realizadas ÷ (Capital + Realizadas)."
+          >
+            <div class="kpi-label">Ganancia Realizada</div>
+            <div class="kpi-value-row">
+              <span class="kpi-value" id="kpi-gz-ibkr">$0</span
+              ><span class="kpi-pct" id="kpi-gz-pct-ibkr"></span>
+            </div>
+            <div class="kpi-sub" id="kpi-gz-sub-ibkr">Pos. cerradas</div>
+          </div>
+        </div>
+
+        <!-- Toolbar IBKR -->
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <button class="btn primary" onclick="openBrokerModal('ibkr')">
+              + Nueva posición
+            </button>
+            <div class="filter-group">
+              <button
+                class="filter-btn active"
+                data-f="todas"
+                onclick="setBrokerFilter('ibkr', 'todas', this)"
+              >
+                Todas
+              </button>
+              <button
+                class="filter-btn"
+                data-f="abierta"
+                onclick="setBrokerFilter('ibkr', 'abierta', this)"
+              >
+                Abiertas
+              </button>
+              <button
+                class="filter-btn"
+                data-f="cerrada"
+                onclick="setBrokerFilter('ibkr', 'cerrada', this)"
+              >
+                Cerradas
+              </button>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center">
+            <button class="btn" onclick="toggleDataPanel('ibkr')">
+              ⚙ Datos / Export
+            </button>
+            <button
+              class="btn"
+              onclick="fetchQuotes()"
+              title="Actualizar precios"
+            >
+              ↺ Cotizaciones
+            </button>
+            <span id="quote-status" class="quote-status"></span>
+          </div>
+        </div>
+
+        <!-- Tabla IBKR -->
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th onclick="sortBrokerBy('ibkr', 'ticker')">
+                  Ticker <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBrokerBy('ibkr', 'fecha')">
+                  Apertura <span class="sort-arrow">↕</span>
+                </th>
+                <th>Estado</th>
+                <th onclick="sortBrokerBy('ibkr', 'dias')">
+                  Días <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBrokerBy('ibkr', 'tramos')">
+                  Tramos <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBrokerBy('ibkr', 'unidades')">
+                  Unidades <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBrokerBy('ibkr', 'ppp')">
+                  PPP <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBrokerBy('ibkr', 'valorActual')">
+                  Precio actual <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBrokerBy('ibkr', 'pVenta')">
+                  P. Venta <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBrokerBy('ibkr', 'invertido')">
+                  Invertido <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBrokerBy('ibkr', 'pnl')">
+                  PnL % <span class="sort-arrow">↕</span>
+                </th>
+                <th onclick="sortBrokerBy('ibkr', 'pnlUSD')">
+                  PnL USD <span class="sort-arrow">↕</span>
+                </th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-ibkr"></tbody>
+            <tfoot id="tfoot-ibkr"></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Modal nueva/editar posición -->
+      <div class="modal-overlay" id="modal-overlay">
+        <div class="modal">
+          <div class="modal-header">
+            <span class="modal-title" id="modal-title">Nueva Posición</span>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Ticker</label>
+                <input
+                  id="f-ticker"
+                  type="text"
+                  placeholder="Ej: AAPL"
+                  style="text-transform: uppercase"
+                />
+              </div>
+              <div class="form-group">
+                <label>Estado</label>
+                <select id="f-estado">
+                  <option value="abierta">Abierta</option>
+                  <option value="cerrada">Cerrada</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Precio Actual (USD)</label>
+                <input
+                  id="f-actual"
+                  type="number"
+                  step="0.0001"
+                  placeholder="0.00"
+                />
+              </div>
+              <div class="form-group">
+                <label>Precio Venta (si cerrada)</label>
+                <input
+                  id="f-venta"
+                  type="number"
+                  step="0.0001"
+                  placeholder="—"
+                />
+              </div>
+              <div class="form-group full">
+                <label>Notas</label>
+                <input id="f-notas" type="text" placeholder="Opcional" />
+              </div>
+            </div>
+
+            <!-- DCA 1 -->
+            <div class="dca-section dca-s1">
+              <div class="dca-section-header">
+                <span class="dca-section-label">1° DCA</span>
+              </div>
+              <div class="dca-fields">
+                <div class="form-group">
+                  <label>Fecha</label><input id="f-d1-fecha" type="date" />
+                </div>
+                <div class="form-group">
+                  <label>Unidades</label
+                  ><input
+                    id="f-d1-unidades"
+                    type="number"
+                    step="0.0001"
+                    placeholder="0"
+                    oninput="liveCalcPPP()"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Precio compra</label
+                  ><input
+                    id="f-d1-precio"
+                    type="number"
+                    step="0.0001"
+                    placeholder="0.00"
+                    oninput="liveCalcPPP()"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- DCA 2 -->
+            <div class="dca-section dca-s2">
+              <div class="dca-section-header">
+                <span class="dca-section-label">2° DCA</span>
+                <button
+                  class="dca-toggle"
+                  id="toggle-dca2"
+                  onclick="toggleDCA(2)"
+                >
+                  + Agregar
+                </button>
+              </div>
+              <div class="dca-fields hidden" id="fields-dca2">
+                <div class="form-group">
+                  <label>Fecha</label><input id="f-d2-fecha" type="date" />
+                </div>
+                <div class="form-group">
+                  <label>Unidades</label
+                  ><input
+                    id="f-d2-unidades"
+                    type="number"
+                    step="0.0001"
+                    placeholder="0"
+                    oninput="liveCalcPPP()"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Precio compra</label
+                  ><input
+                    id="f-d2-precio"
+                    type="number"
+                    step="0.0001"
+                    placeholder="0.00"
+                    oninput="liveCalcPPP()"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- DCA 3 -->
+            <div class="dca-section dca-s3">
+              <div class="dca-section-header">
+                <span class="dca-section-label">3° DCA</span>
+                <button
+                  class="dca-toggle"
+                  id="toggle-dca3"
+                  onclick="toggleDCA(3)"
+                >
+                  + Agregar
+                </button>
+              </div>
+              <div class="dca-fields hidden" id="fields-dca3">
+                <div class="form-group">
+                  <label>Fecha</label><input id="f-d3-fecha" type="date" />
+                </div>
+                <div class="form-group">
+                  <label>Unidades</label
+                  ><input
+                    id="f-d3-unidades"
+                    type="number"
+                    step="0.0001"
+                    placeholder="0"
+                    oninput="liveCalcPPP()"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Precio compra</label
+                  ><input
+                    id="f-d3-precio"
+                    type="number"
+                    step="0.0001"
+                    placeholder="0.00"
+                    oninput="liveCalcPPP()"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div
-              id="gas-instructions"
-              class="hidden"
+              id="ppp-preview"
               style="
-                margin-top: 10px;
-                padding: 12px;
-                background: var(--bg);
+                display: none;
+                align-items: center;
+                padding: 12px 14px;
+                background: var(--surface2);
                 border: 1px solid var(--border2);
-                font-size: 10.5px;
-                line-height: 1.7;
-                color: var(--text);
+                margin-top: 16px;
               "
             >
-              <strong style="color: var(--yellow); letter-spacing: 0.06em"
-                >CÓMO CREAR TU PROXY EN 5 MINUTOS</strong
-              ><br /><br />
-              1. Ir a <strong>script.google.com</strong> → "Nuevo proyecto"<br />
-              2. Borrar el contenido y pegar el código del archivo
-              <strong>gas-proxy.js</strong> que se descarga junto con esta
-              app<br />
-              3. Menú <strong>Implementar → Nueva implementación</strong><br />
-              4. Tipo: <strong>Aplicación web</strong> · Ejecutar como:
-              <strong>Yo</strong> · Acceso: <strong>Cualquier usuario</strong
-              ><br />
-              5. Copiar la URL generada y pegarla arriba<br /><br />
-              <span style="color: var(--text-dim)"
-                >El script es tuyo, corre en tu cuenta de Google, y llama a
-                Yahoo Finance desde el servidor de Google (sin restricciones
-                CORS).</span
-              >
+              <span class="ppp-label">PPP estimado</span>
+              <span class="ppp-val" id="ppp-val"></span>
+              <span class="ppp-det" id="ppp-det"></span>
             </div>
           </div>
+          <div class="modal-footer">
+            <button class="btn" onclick="closeModal()">Cancelar</button>
+            <button class="btn primary" onclick="savePosition()">
+              Guardar
+            </button>
+          </div>
         </div>
-        <div class="modal-footer">
-          <button class="btn" onclick="closeConfig()">Cancelar</button>
-          <button class="btn primary" onclick="saveConfig()">Guardar</button>
+      </div>
+
+      <!-- Modal Config -->
+      <div class="modal-overlay" id="config-overlay">
+        <div class="modal" style="width: 400px">
+          <div class="modal-header">
+            <span class="modal-title">Configuración del Reto</span>
+            <button class="modal-close" onclick="closeConfig()">✕</button>
+          </div>
+          <div class="modal-body">
+            <div class="config-group">
+              <label>Capital inicial (USD)</label>
+              <input
+                id="cfg-capital"
+                type="number"
+                step="0.01"
+                placeholder="10000"
+              />
+              <div
+                style="margin-top: 6px; font-size: 10px; color: var(--text-dim)"
+              >
+                Base de cálculo para liquidez y porcentajes.
+              </div>
+            </div>
+            <div class="config-group">
+              <label>Nombre del reto</label>
+              <input
+                id="cfg-nombre"
+                type="text"
+                placeholder="Mi Reto DCA 2025"
+              />
+            </div>
+            <div
+              class="config-group"
+              style="
+                margin-top: 18px;
+                padding-top: 16px;
+                border-top: 1px solid var(--border);
+              "
+            >
+              <label>URL Google Apps Script (proxy de cotizaciones)</label>
+              <input
+                id="cfg-gas"
+                type="url"
+                placeholder="https://script.google.com/macros/s/…/exec"
+                style="font-size: 12px"
+              />
+              <div
+                style="margin-top: 6px; font-size: 10px; color: var(--text-dim)"
+              >
+                Necesario para tickers que Stooq no cubre (UVIX, AMZU, AGQ,
+                KORU, etc.).<br />
+                <span
+                  id="gas-link-btn"
+                  style="
+                    color: var(--green);
+                    cursor: pointer;
+                    text-decoration: underline;
+                  "
+                  onclick="
+                    document
+                      .getElementById('gas-instructions')
+                      .classList.toggle('hidden')
+                  "
+                  >Ver instrucciones para crear el script →</span
+                >
+              </div>
+              <div
+                id="gas-instructions"
+                class="hidden"
+                style="
+                  margin-top: 10px;
+                  padding: 12px;
+                  background: var(--bg);
+                  border: 1px solid var(--border2);
+                  font-size: 10.5px;
+                  line-height: 1.7;
+                  color: var(--text);
+                "
+              >
+                <strong style="color: var(--yellow); letter-spacing: 0.06em"
+                  >CÓMO CREAR TU PROXY EN 5 MINUTOS</strong
+                ><br /><br />
+                1. Ir a <strong>script.google.com</strong> → "Nuevo proyecto"<br />
+                2. Borrar el contenido y pegar el código del archivo
+                <strong>gas-proxy.js</strong> que se descarga junto con esta
+                app<br />
+                3. Menú <strong>Implementar → Nueva implementación</strong
+                ><br />
+                4. Tipo: <strong>Aplicación web</strong> · Ejecutar como:
+                <strong>Yo</strong> · Acceso: <strong>Cualquier usuario</strong
+                ><br />
+                5. Copiar la URL generada y pegarla arriba<br /><br />
+                <span style="color: var(--text-dim)"
+                  >El script es tuyo, corre en tu cuenta de Google, y llama a
+                  Yahoo Finance desde el servidor de Google (sin restricciones
+                  CORS).</span
+                >
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn" onclick="closeConfig()">Cancelar</button>
+            <button class="btn primary" onclick="saveConfig()">Guardar</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1416,16 +1885,39 @@
     <script>
       // ── Estado global ──
       let positions = [];
+      let hapiPositions = [];
+      let ibkrPositions = [];
       let expanded = new Set();
       let filter = "todas";
       let sortKey = "fecha";
       let sortDir = 1;
       let editingId = null;
+      let currentBroker = null; // Broker actual en modal
+      let currentView = "reto"; // reto, hapi, ibkr
       let config = { capital: 10000, nombre: "Reto DCA" };
       let liveQuotes = {};
+      let pricesCache = {}; // Cache para precios de 52 semanas
+
+      // Estado independiente por broker
+      let brokerState = {
+        hapi: {
+          filter: "todas",
+          sortKey: "fecha",
+          sortDir: 1,
+          expanded: new Set(),
+        },
+        ibkr: {
+          filter: "todas",
+          sortKey: "fecha",
+          sortDir: 1,
+          expanded: new Set(),
+        },
+      };
 
       const LS_POSITIONS = "reto_dca_positions";
       const LS_CONFIG = "reto_dca_config";
+      const LS_HAPI_POSITIONS = "reto_dca_hapi_positions";
+      const LS_IBKR_POSITIONS = "reto_dca_ibkr_positions";
 
       // ── Persistencia ──
       function loadFromStorage() {
@@ -1434,13 +1926,24 @@
           positions = raw ? JSON.parse(raw) : [];
           const rawCfg = localStorage.getItem(LS_CONFIG);
           if (rawCfg) config = { ...config, ...JSON.parse(rawCfg) };
+
+          // Cargar datos de brokers
+          const rawHapi = localStorage.getItem(LS_HAPI_POSITIONS);
+          hapiPositions = rawHapi ? JSON.parse(rawHapi) : [];
+          const rawIbkr = localStorage.getItem(LS_IBKR_POSITIONS);
+          ibkrPositions = rawIbkr ? JSON.parse(rawIbkr) : [];
         } catch (e) {
           positions = [];
+          hapiPositions = [];
+          ibkrPositions = [];
         }
+        updateBrokerInfo();
       }
       function saveToStorage() {
         localStorage.setItem(LS_POSITIONS, JSON.stringify(positions));
         localStorage.setItem(LS_CONFIG, JSON.stringify(config));
+        localStorage.setItem(LS_HAPI_POSITIONS, JSON.stringify(hapiPositions));
+        localStorage.setItem(LS_IBKR_POSITIONS, JSON.stringify(ibkrPositions));
         updateStorageInfo();
       }
       function updateStorageInfo() {
@@ -1451,6 +1954,24 @@
         const d = document.getElementById("data-info");
         if (d)
           d.textContent = `${positions.length} posiciones · ${kb} KB usados · última actualización: ${new Date().toLocaleTimeString("es-AR")}`;
+      }
+      function updateBrokerInfo() {
+        const hapiDiv = document.getElementById("hapi-info");
+        const ibkrDiv = document.getElementById("ibkr-info");
+        if (hapiDiv) {
+          const hapiBytes = new Blob([
+            localStorage.getItem(LS_HAPI_POSITIONS) || "",
+          ]).size;
+          const hapiKb = (hapiBytes / 1024).toFixed(2);
+          hapiDiv.textContent = `${hapiPositions.length} posiciones · ${hapiKb} KB`;
+        }
+        if (ibkrDiv) {
+          const ibkrBytes = new Blob([
+            localStorage.getItem(LS_IBKR_POSITIONS) || "",
+          ]).size;
+          const ibkrKb = (ibkrBytes / 1024).toFixed(2);
+          ibkrDiv.textContent = `${ibkrPositions.length} posiciones · ${ibkrKb} KB`;
+        }
       }
 
       // ── Helpers de formato ──
@@ -1622,23 +2143,23 @@
             : "";
           const dcaColors = ["dca-1", "dca-2", "dca-3"];
           html += `<tr class="row-summary ${p.estado}${exp ? " expanded" : ""}">
-      <td><button class="toggle-btn" onclick="toggleExpand('${p.id}')">${exp ? "−" : "+"}</button><span class="ticker">${p.ticker}</span>${p.notas ? `<div class="ticker-sub">${p.notas}</div>` : ""}</td>
-      <td><span class="date">${fmtDate(p.fechaApertura)}</span></td>
-      <td><span class="badge ${p.estado}">${p.estado.toUpperCase()}</span></td>
-      <td>${p.dias}</td>
-      <td><span class="dca-count">${p.tramos.length}</span></td>
-      <td class="units">${p.totalUnidades.toFixed(4)}</td>
-      <td class="price">${fmt$(p.ppp)}<span class="ppp-hint">/u</span></td>
-      <td class="price">${p.valorActual > 0 ? fmt$(p.valorActual) + (liveInfo ? "&nbsp;" + liveInfo : "") : '<span class="pnl-zero">sin precio</span>'}</td>
-      <td class="price">${p.pVenta ? fmt$(p.pVenta) : "—"}</td>
-      <td>${p.estado === "abierta" ? fmt$(p.totalInvertido) : '<span class="pnl-zero">' + fmt$(p.totalInvertido) + "</span>"}</td>
-      <td class="${pc}">${fmtPct(p.pnlPct)}</td>
-      <td class="${pc}">${p.pnlUSD >= 0 ? "+" : "-"}${fmt$(p.pnlUSD)}</td>
-      <td><div class="actions">
-        <button class="action-btn" onclick="editPos('${p.id}')" title="Editar">✎</button>
-        <button class="action-btn del" onclick="deletePos('${p.id}')" title="Eliminar">✕</button>
-      </div></td>
-    </tr>`;
+          <td><button class="toggle-btn" onclick="toggleExpand('${p.id}')">${exp ? "−" : "+"}</button><span class="ticker">${p.ticker}</span>${p.notas ? `<div class="ticker-sub">${p.notas}</div>` : ""}</td>
+          <td><span class="date">${fmtDate(p.fechaApertura)}</span></td>
+          <td><span class="badge ${p.estado}">${p.estado.toUpperCase()}</span></td>
+          <td>${p.dias}</td>
+          <td><span class="dca-count">${p.tramos.length}</span></td>
+          <td class="units">${p.totalUnidades.toFixed(4)}</td>
+          <td class="price">${fmt$(p.ppp)}<span class="ppp-hint">/u</span></td>
+          <td class="price">${p.valorActual > 0 ? fmt$(p.valorActual) + (liveInfo ? "&nbsp;" + liveInfo : "") : '<span class="pnl-zero">sin precio</span>'}</td>
+          <td class="price">${p.pVenta ? fmt$(p.pVenta) : "—"}</td>
+          <td>${p.estado === "abierta" ? fmt$(p.totalInvertido) : '<span class="pnl-zero">' + fmt$(p.totalInvertido) + "</span>"}</td>
+          <td class="${pc}">${fmtPct(p.pnlPct)}</td>
+          <td class="${pc}">${p.pnlUSD >= 0 ? "+" : "-"}${fmt$(p.pnlUSD)}</td>
+          <td><div class="actions">
+            <button class="action-btn" onclick="editPos('${p.id}')" title="Editar">✎</button>
+            <button class="action-btn del" onclick="deletePos('${p.id}')" title="Eliminar">✕</button>
+          </div></td>
+        </tr>`;
           if (exp) {
             p.tramos.forEach((t, i) => {
               const totInv = t.unidades * t.precio;
@@ -1650,18 +2171,18 @@
               const pc2 = pu >= 0 ? "pnl-pos" : "pnl-neg";
               const isLast = i === p.tramos.length - 1;
               html += `<tr class="row-dca${isLast ? " last-dca" : ""}">
-          <td><span class="dca-badge ${dcaColors[i] || "dca-1"}"><span class="dca-dot"></span>${i + 1}° DCA</span></td>
-          <td><span class="date">${fmtDate(t.fecha)}</span></td>
-          <td>—</td>
-          <td>—</td><td>—</td>
-          <td class="units">${t.unidades.toFixed(4)}</td>
-          <td class="price">${fmt$(t.precio)}</td>
-          <td>—</td><td>—</td>
-          <td>${fmt$(totInv)}</td>
-          <td class="${pc2}">${fmtPct(puPct)}</td>
-          <td class="${pc2}">${pu >= 0 ? "+" : "-"}${fmt$(pu)}</td>
-          <td>—</td>
-        </tr>`;
+              <td><span class="dca-badge ${dcaColors[i] || "dca-1"}"><span class="dca-dot"></span>${i + 1}° DCA</span></td>
+              <td><span class="date">${fmtDate(t.fecha)}</span></td>
+              <td>—</td>
+              <td>—</td><td>—</td>
+              <td class="units">${t.unidades.toFixed(4)}</td>
+              <td class="price">${fmt$(t.precio)}</td>
+              <td>—</td><td>—</td>
+              <td>${fmt$(totInv)}</td>
+              <td class="${pc2}">${fmtPct(puPct)}</td>
+              <td class="${pc2}">${pu >= 0 ? "+" : "-"}${fmt$(pu)}</td>
+              <td>—</td>
+            </tr>`;
             });
           }
         });
@@ -1685,12 +2206,12 @@
             ? `<span title="Abiertas: ${fmt$(totInvAbiertas)} · Cerradas: ${fmt$(totInvCerradas)}">${fmt$(totInvAbiertas)} <span class="ppp-hint">act.</span></span>`
             : fmt$(totInvAbiertas);
         document.getElementById("tfoot").innerHTML = `<tr>
-    <td colspan="9" class="total-label">Total filtrado (${filtered.length})</td>
-    <td>${invLabel}</td>
-    <td class="${pc2}">${fmtPct(totPct)}</td>
-    <td class="${pc2}">${totPnlAbiertas >= 0 ? "+" : "-"}${fmt$(totPnlAbiertas)}</td>
-    <td></td>
-  </tr>`;
+        <td colspan="9" class="total-label">Total filtrado (${filtered.length})</td>
+        <td>${invLabel}</td>
+        <td class="${pc2}">${fmtPct(totPct)}</td>
+        <td class="${pc2}">${totPnlAbiertas >= 0 ? "+" : "-"}${fmt$(totPnlAbiertas)}</td>
+        <td></td>
+      </tr>`;
       }
 
       function toggleExpand(id) {
@@ -1714,9 +2235,212 @@
         render();
       }
 
+      // ── Funciones para brokers ──
+      function renderBrokerDashboard(broker) {
+        const brokerPositions =
+          broker === "hapi" ? hapiPositions : ibkrPositions;
+        const state = brokerState[broker];
+        const all = brokerPositions.map(calcPos);
+        let filtered = all;
+
+        if (state.filter !== "todas") {
+          filtered = all.filter((p) => p.estado === state.filter);
+        }
+
+        // Sort
+        filtered.sort((a, b) => {
+          let va, vb;
+          if (state.sortKey === "ticker") {
+            va = a.ticker;
+            vb = b.ticker;
+          } else if (state.sortKey === "fecha") {
+            va = a.fechaApertura;
+            vb = b.fechaApertura;
+          } else if (state.sortKey === "dias") {
+            va = a.dias;
+            vb = b.dias;
+          } else if (state.sortKey === "tramos") {
+            va = a.tramos.length;
+            vb = b.tramos.length;
+          } else if (state.sortKey === "unidades") {
+            va = a.totalUnidades;
+            vb = b.totalUnidades;
+          } else if (state.sortKey === "ppp") {
+            va = a.ppp;
+            vb = b.ppp;
+          } else if (state.sortKey === "valorActual") {
+            va = a.valorActual;
+            vb = b.valorActual;
+          } else if (state.sortKey === "pVenta") {
+            va = a.pVenta || 0;
+            vb = b.pVenta || 0;
+          } else if (state.sortKey === "invertido") {
+            va = a.totalInvertido;
+            vb = b.totalInvertido;
+          } else if (state.sortKey === "pnl") {
+            va = a.pnlPct;
+            vb = b.pnlPct;
+          } else if (state.sortKey === "pnlUSD") {
+            va = a.pnlUSD;
+            vb = b.pnlUSD;
+          }
+          if (typeof va === "string")
+            return state.sortDir * va.localeCompare(vb);
+          return state.sortDir * (va - vb);
+        });
+
+        // KPIs
+        const abiertas = all.filter((p) => p.estado === "abierta");
+        const cerradas = all.filter((p) => p.estado === "cerrada");
+        const CAPITAL = 10000; // Capital default para brokers
+        const invAbiertas = abiertas.reduce((s, p) => s + p.totalInvertido, 0);
+        const gananciaRealizada = cerradas.reduce((s, p) => s + p.pnlUSD, 0);
+        const liquidez = CAPITAL - invAbiertas + gananciaRealizada;
+        const baseCapital = CAPITAL + gananciaRealizada;
+        const liqPct = baseCapital > 0 ? (liquidez / baseCapital) * 100 : 0;
+        const pnlAbiertas = abiertas.reduce((s, p) => s + p.pnlUSD, 0);
+        const portfolioTotal = CAPITAL + pnlAbiertas;
+        const grC = gananciaRealizada >= 0 ? "positive" : "negative";
+        const pnlC = pnlAbiertas >= 0 ? "positive" : "negative";
+        const liqC = liqPct >= 50 ? "positive" : "warn";
+
+        const suffix = `-${broker}`;
+        document.getElementById("kpi-capital" + suffix).textContent =
+          fmt$(CAPITAL);
+        document.getElementById("kpi-inv" + suffix).textContent =
+          fmt$(invAbiertas);
+        document.getElementById("kpi-inv-sub" + suffix).textContent =
+          abiertas.length + " pos. abiertas";
+        document.getElementById("kpi-liq" + suffix).textContent =
+          fmtPct(liqPct);
+        document.getElementById("kpi-liq-sub" + suffix).textContent =
+          fmt$(liquidez);
+        document.getElementById("kpi-total" + suffix).textContent =
+          fmt$(portfolioTotal);
+        document.getElementById("kpi-pnl" + suffix).textContent =
+          (pnlAbiertas >= 0 ? "+" : "") + fmt$(pnlAbiertas);
+        document.getElementById("kpi-pnl-pct" + suffix).textContent =
+          invAbiertas > 0 ? fmtPct((pnlAbiertas / invAbiertas) * 100) : "";
+        document.getElementById("kpi-pnl-sub" + suffix).textContent =
+          "Posiciones abiertas";
+        document.getElementById("kpi-gz" + suffix).textContent =
+          (gananciaRealizada >= 0 ? "+" : "") + fmt$(gananciaRealizada);
+        document.getElementById("kpi-gz-pct" + suffix).textContent =
+          baseCapital > 0
+            ? fmtPct((gananciaRealizada / baseCapital) * 100)
+            : "";
+        document.getElementById("kpi-gz-sub" + suffix).textContent =
+          cerradas.length +
+          " pos. cerrada" +
+          (cerradas.length !== 1 ? "s" : "");
+
+        // Tabla
+        let html = "";
+        if (!filtered.length) {
+          html =
+            '<tr class="empty-row"><td colspan="13">Sin posiciones</td></tr>';
+        }
+        filtered.forEach((p) => {
+          const exp = state.expanded.has(p.id);
+          const pc = p.pnlPct >= 0 ? "pnl-pos" : "pnl-neg";
+          const dcaColors = ["dca-1", "dca-2", "dca-3"];
+          html += `<tr class="row-summary ${p.estado}${exp ? " expanded" : ""}">
+          <td><button class="toggle-btn" onclick="toggleBrokerExpand('${broker}', '${p.id}')">${exp ? "−" : "+"}</button><span class="ticker">${p.ticker}</span>${p.notas ? `<div class="ticker-sub">${p.notas}</div>` : ""}</td>
+          <td><span class="date">${fmtDate(p.fechaApertura)}</span></td>
+          <td><span class="badge ${p.estado}">${p.estado.toUpperCase()}</span></td>
+          <td>${p.dias}</td>
+          <td><span class="dca-count">${p.tramos.length}</span></td>
+          <td class="units">${p.totalUnidades.toFixed(4)}</td>
+          <td class="price">${fmt$(p.ppp)}<span class="ppp-hint">/u</span></td>
+          <td class="price">${p.valorActual > 0 ? fmt$(p.valorActual) : '<span class="pnl-zero">sin precio</span>'}</td>
+          <td class="price">${p.pVenta ? fmt$(p.pVenta) : "—"}</td>
+          <td>${p.estado === "abierta" ? fmt$(p.totalInvertido) : '<span class="pnl-zero">' + fmt$(p.totalInvertido) + "</span>"}</td>
+          <td class="${pc}">${fmtPct(p.pnlPct)}</td>
+          <td class="${pc}">${p.pnlUSD >= 0 ? "+" : "-"}${fmt$(p.pnlUSD)}</td>
+          <td><div class="actions">
+            <button class="action-btn" onclick="editBrokerPos('${broker}', '${p.id}')" title="Editar">✎</button>
+            <button class="action-btn del" onclick="deleteBrokerPos('${broker}', '${p.id}')" title="Eliminar">✕</button>
+          </div></td>
+        </tr>`;
+          if (exp) {
+            p.tramos.forEach((t, i) => {
+              const totInv = t.unidades * t.precio;
+              const valAct =
+                t.unidades *
+                (p.estado === "cerrada" && p.pVenta ? p.pVenta : p.valorActual);
+              const pu = valAct - totInv;
+              const puPct = totInv > 0 ? (pu / totInv) * 100 : 0;
+              const pc2 = pu >= 0 ? "pnl-pos" : "pnl-neg";
+              const isLast = i === p.tramos.length - 1;
+              html += `<tr class="row-dca${isLast ? " last-dca" : ""}">
+              <td><span class="dca-badge ${dcaColors[i] || "dca-1"}"><span class="dca-dot"></span>${i + 1}° DCA</span></td>
+              <td><span class="date">${fmtDate(t.fecha)}</span></td>
+              <td>—</td>
+              <td>—</td><td>—</td>
+              <td class="units">${t.unidades.toFixed(4)}</td>
+              <td class="price">${fmt$(t.precio)}</td>
+              <td>—</td><td>—</td>
+              <td>${fmt$(totInv)}</td>
+              <td class="${pc2}">${fmtPct(puPct)}</td>
+              <td class="${pc2}">${pu >= 0 ? "+" : "-"}${fmt$(pu)}</td>
+              <td>—</td>
+            </tr>`;
+            });
+          }
+        });
+        document.getElementById("tbody-" + broker).innerHTML = html;
+
+        // Footer
+        const totInvAbiertas = filtered
+          .filter((p) => p.estado === "abierta")
+          .reduce((s, p) => s + p.totalInvertido, 0);
+        const totPnlAbiertas = filtered
+          .filter((p) => p.estado === "abierta")
+          .reduce((s, p) => s + p.pnlUSD, 0);
+        const totPct =
+          totInvAbiertas > 0 ? (totPnlAbiertas / totInvAbiertas) * 100 : 0;
+        const pc2 = totPnlAbiertas >= 0 ? "pnl-pos" : "pnl-neg";
+        document.getElementById("tfoot-" + broker).innerHTML = `<tr>
+        <td colspan="9" class="total-label">Total filtrado (${filtered.length})</td>
+        <td>${fmt$(totInvAbiertas)}</td>
+        <td class="${pc2}">${fmtPct(totPct)}</td>
+        <td class="${pc2}">${totPnlAbiertas >= 0 ? "+" : "-"}${fmt$(totPnlAbiertas)}</td>
+        <td></td>
+      </tr>`;
+      }
+
+      function setBrokerFilter(broker, f, el) {
+        brokerState[broker].filter = f;
+        const dashboard = document.getElementById(broker + "-dashboard");
+        dashboard
+          .querySelectorAll(".filter-btn")
+          .forEach((b) => b.classList.remove("active"));
+        el.classList.add("active");
+        renderBrokerDashboard(broker);
+      }
+
+      function sortBrokerBy(broker, k) {
+        const state = brokerState[broker];
+        if (state.sortKey === k) state.sortDir *= -1;
+        else {
+          state.sortKey = k;
+          state.sortDir = 1;
+        }
+        renderBrokerDashboard(broker);
+      }
+
+      function toggleBrokerExpand(broker, id) {
+        const state = brokerState[broker];
+        state.expanded.has(id)
+          ? state.expanded.delete(id)
+          : state.expanded.add(id);
+        renderBrokerDashboard(broker);
+      }
+
       // ── Modal posición ──
       function openModal(id = null) {
         editingId = id;
+        currentBroker = null;
         document.getElementById("modal-title").textContent = id
           ? "Editar Posición"
           : "Nueva Posición";
@@ -1865,6 +2589,48 @@
           return;
         }
         const now = new Date().toISOString();
+
+        // Handle broker-specific saving
+        if (
+          currentBroker &&
+          (currentBroker === "hapi" || currentBroker === "ibkr")
+        ) {
+          const targetPositions =
+            currentBroker === "hapi" ? hapiPositions : ibkrPositions;
+          if (editingId) {
+            const idx = targetPositions.findIndex((x) => x.id === editingId);
+            if (idx >= 0) {
+              targetPositions[idx] = {
+                ...targetPositions[idx],
+                ticker,
+                estado,
+                valorActual: actual,
+                pVenta: venta,
+                notas,
+                tramos,
+                updated_at: now,
+              };
+            }
+          } else {
+            targetPositions.push({
+              id: genId(),
+              ticker,
+              estado,
+              valorActual: actual,
+              pVenta: venta,
+              notas,
+              tramos,
+              created_at: now,
+              updated_at: now,
+            });
+          }
+          saveToStorage();
+          closeModal();
+          renderBrokerDashboard(currentBroker);
+          return;
+        }
+
+        // Default: Reto broker
         if (editingId) {
           const idx = positions.findIndex((x) => x.id === editingId);
           if (idx >= 0)
@@ -1908,6 +2674,78 @@
         }
       }
 
+      function openBrokerModal(broker, id = null) {
+        editingId = id;
+        currentBroker = broker;
+        document.getElementById("modal-title").textContent = id
+          ? "Editar Posición"
+          : "Nueva Posición";
+        const today = new Date().toISOString().split("T")[0];
+        [2, 3].forEach((n) => {
+          document.getElementById(`fields-dca${n}`).classList.add("hidden");
+          const b = document.getElementById(`toggle-dca${n}`);
+          b.textContent = "+ Agregar";
+          b.classList.remove("active");
+          [`f-d${n}-fecha`, `f-d${n}-unidades`, `f-d${n}-precio`].forEach(
+            (fid) => (document.getElementById(fid).value = ""),
+          );
+        });
+        document.getElementById("ppp-preview").style.display = "none";
+        if (id) {
+          const brokerPositions =
+            broker === "hapi" ? hapiPositions : ibkrPositions;
+          const p = brokerPositions.find((x) => x.id === id);
+          document.getElementById("f-ticker").value = p.ticker;
+          document.getElementById("f-estado").value = p.estado;
+          document.getElementById("f-actual").value = p.valorActual;
+          document.getElementById("f-venta").value = p.pVenta || "";
+          document.getElementById("f-notas").value = p.notas || "";
+          p.tramos.forEach((t, i) => {
+            const n = i + 1;
+            if (n > 1) {
+              document
+                .getElementById(`fields-dca${n}`)
+                .classList.remove("hidden");
+              const b = document.getElementById(`toggle-dca${n}`);
+              b.textContent = "− Quitar";
+              b.classList.add("active");
+            }
+            document.getElementById(`f-d${n}-fecha`).value = t.fecha;
+            document.getElementById(`f-d${n}-unidades`).value = t.unidades;
+            document.getElementById(`f-d${n}-precio`).value = t.precio;
+          });
+          liveCalcPPP();
+        } else {
+          ["f-ticker", "f-actual", "f-venta", "f-notas"].forEach(
+            (fid) => (document.getElementById(fid).value = ""),
+          );
+          document.getElementById("f-estado").value = "abierta";
+          document.getElementById("f-d1-fecha").value = today;
+          document.getElementById("f-d1-unidades").value = "";
+          document.getElementById("f-d1-precio").value = "";
+        }
+        document.getElementById("modal-overlay").classList.add("open");
+        document.getElementById("f-ticker").focus();
+      }
+
+      function editBrokerPos(broker, id) {
+        openBrokerModal(broker, id);
+      }
+
+      function deleteBrokerPos(broker, id) {
+        if (confirm("¿Eliminar esta posición?")) {
+          if (broker === "hapi") {
+            hapiPositions = hapiPositions.filter((p) => p.id !== id);
+            brokerState.hapi.expanded.delete(id);
+          } else {
+            ibkrPositions = ibkrPositions.filter((p) => p.id !== id);
+            brokerState.ibkr.expanded.delete(id);
+          }
+          saveToStorage();
+          renderBrokerDashboard(broker);
+        }
+      }
+
       // ── Config ──
       function openConfig() {
         document.getElementById("cfg-capital").value = config.capital;
@@ -1930,10 +2768,50 @@
       }
 
       // ── Data panel ──
-      function toggleDataPanel() {
-        const s = document.getElementById("data-section");
-        s.classList.toggle("open");
-        updateStorageInfo();
+      function toggleDataPanel(broker = null) {
+        if (broker === "hapi") {
+          const s = document.getElementById("data-section-hapi");
+          if (s) s.classList.toggle("open");
+        } else if (broker === "ibkr") {
+          const s = document.getElementById("data-section-ibkr");
+          if (s) s.classList.toggle("open");
+        } else {
+          const s = document.getElementById("data-section");
+          s.classList.toggle("open");
+          updateStorageInfo();
+        }
+      }
+
+      // ── Vista management ──
+      function switchView(view, el) {
+        currentView = view;
+        // Clear existing headers
+        document
+          .querySelectorAll(".dashboard-header")
+          .forEach((header) => header.remove());
+
+        // Update tabs
+        document
+          .querySelectorAll("[data-view]")
+          .forEach((b) => b.classList.remove("active"));
+        if (el) el.classList.add("active");
+
+        // Hide all data panels on view change; they should open only via the corresponding button
+        document.querySelectorAll(".data-section").forEach((section) => {
+          section.classList.remove("open");
+          section.style.display = "";
+        });
+        document
+          .querySelectorAll(".dashboard-view")
+          .forEach((d) => (d.style.display = "none"));
+        document.getElementById(view + "-dashboard").style.display = "block";
+
+        // Re-render
+        if (view === "reto") {
+          render();
+        } else {
+          renderBrokerDashboard(view);
+        }
       }
 
       // ── Export / Import ──
@@ -1952,6 +2830,7 @@
         a.download = `reto-dca-${new Date().toISOString().split("T")[0]}.json`;
         a.click();
         URL.revokeObjectURL(a.href);
+        toggleDataPanel();
       }
 
       function exportCSV() {
@@ -1973,11 +2852,21 @@
             "P.Venta",
             "PnL%",
             "PnL USD",
+            "Precio 52w Min",
+            "Precio 52w Max",
+            "% vs 52w Max",
             "Estado",
             "Notas",
           ],
         ];
         positions.map(calcPos).forEach((p) => {
+          const priceData = pricesCache[p.ticker] || {};
+          const price52wMin = priceData.fiftyTwoWeekLow || 0;
+          const price52wMax = priceData.fiftyTwoWeekHigh || 0;
+          const price52wPct =
+            price52wMax > 0
+              ? ((p.valorActual - price52wMax) / price52wMax) * 100
+              : 0;
           p.tramos.forEach((t, i) => {
             const tot = t.unidades * t.precio;
             const cur =
@@ -1992,11 +2881,14 @@
               num(t.unidades, 4),
               num(t.precio, 4),
               num(tot, 2),
-              num(p.ppp, 4),
+              num(p.ppp || tot / t.unidades, 4),
               num(p.valorActual, 4),
               p.pVenta ? num(p.pVenta, 4) : "",
               num(pct, 2) + "%",
               num(pu, 2),
+              num(price52wMin, 4),
+              num(price52wMax, 4),
+              num(price52wPct, 2) + "%",
               p.estado,
               p.notas || "",
             ]);
@@ -2011,6 +2903,7 @@
         a.download = `reto-dca-${new Date().toISOString().split("T")[0]}.csv`;
         a.click();
         URL.revokeObjectURL(a.href);
+        toggleDataPanel();
       }
 
       function importJSON(input) {
@@ -2045,6 +2938,7 @@
             saveToStorage();
             render();
             alert("Importación completada.");
+            toggleDataPanel();
           } catch (err) {
             alert("Error al importar: " + err.message);
           }
@@ -2062,6 +2956,487 @@
           positions = [];
           saveToStorage();
           render();
+          toggleDataPanel();
+        }
+      }
+
+      function importCSV(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const csv = e.target.result;
+            const lines = csv.trim().split("\n");
+            if (lines.length < 2) throw new Error("CSV vacío o inválido");
+
+            // Parsear headers
+            const headers = lines[0]
+              .split(";")
+              .map((h) => h.trim().replace(/^"|"$/g, ""));
+
+            // Indices de columnas
+            const colIdx = {
+              ticker: headers.indexOf("Ticker"),
+              tramo: headers.indexOf("Tramo"),
+              fecha: headers.indexOf("Fecha"),
+              unidades: headers.indexOf("Unidades"),
+              pcompra: headers.indexOf("P.Compra"),
+              valorActual: headers.indexOf("Valor Actual"),
+              pventa: headers.indexOf("P.Venta"),
+              estado: headers.indexOf("Estado"),
+              notas: headers.indexOf("Notas"),
+            };
+
+            // Validar que existan las columnas necesarias
+            if (
+              colIdx.ticker < 0 ||
+              colIdx.fecha < 0 ||
+              colIdx.unidades < 0 ||
+              colIdx.pcompra < 0
+            ) {
+              throw new Error(
+                "CSV debe contener: Ticker, Fecha, Unidades, P.Compra",
+              );
+            }
+
+            // Agrupar por ticker para reconstruir posiciones
+            const posMap = {};
+            for (let i = 1; i < lines.length; i++) {
+              const parts = lines[i]
+                .split(";")
+                .map((p) => p.trim().replace(/^"|"$/g, ""));
+              if (parts.length < headers.length - 2) continue; // skip empty lines
+
+              const ticker = parts[colIdx.ticker]?.toUpperCase() || "";
+              if (!ticker) continue;
+
+              const fecha = parts[colIdx.fecha] || "";
+              const unidades =
+                parseFloat(parts[colIdx.unidades]?.replace(",", ".")) || 0;
+              const pcompra =
+                parseFloat(parts[colIdx.pcompra]?.replace(",", ".")) || 0;
+              const valorActual =
+                parseFloat(parts[colIdx.valorActual]?.replace(",", ".")) || 0;
+              const pventa = parts[colIdx.pventa]
+                ? parseFloat(parts[colIdx.pventa]?.replace(",", "."))
+                : null;
+              const estado = parts[colIdx.estado] || "abierta";
+              const notas = colIdx.notas >= 0 ? parts[colIdx.notas] || "" : "";
+
+              if (!fecha || unidades <= 0 || pcompra <= 0) continue;
+
+              if (!posMap[ticker]) {
+                posMap[ticker] = {
+                  id: genId(),
+                  ticker: ticker,
+                  estado: estado,
+                  valorActual: valorActual,
+                  pVenta: pventa,
+                  notas: notas,
+                  tramos: [],
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                };
+              }
+
+              posMap[ticker].tramos.push({
+                fecha: fecha,
+                unidades: unidades,
+                precio: pcompra,
+              });
+
+              // Actualizar el estado en caso de que varíe
+              posMap[ticker].estado = estado;
+              posMap[ticker].valorActual = valorActual;
+              if (pventa !== null) posMap[ticker].pVenta = pventa;
+            }
+
+            const newPositions = Object.values(posMap);
+
+            if (newPositions.length === 0) {
+              throw new Error("No se encontraron posiciones válidas en el CSV");
+            }
+
+            const action = confirm(
+              `Importar ${newPositions.length} posiciones desde CSV.\n¿Reemplazar todo (Aceptar) o AGREGAR a los existentes (Cancelar)?`,
+            );
+            if (action) {
+              positions = newPositions;
+            } else {
+              const ids = new Set(positions.map((p) => p.ticker));
+              newPositions.forEach((p) => {
+                if (!ids.has(p.ticker)) positions.push(p);
+              });
+            }
+            saveToStorage();
+            render();
+            alert(
+              `Importación completada: ${newPositions.length} posiciones importadas.`,
+            );
+            toggleDataPanel();
+          } catch (err) {
+            alert("Error al importar CSV: " + err.message);
+          }
+          input.value = "";
+        };
+        reader.readAsText(file);
+      }
+
+      // ── Funciones para manejar Brokers ──
+      function exportBrokerJSON(broker) {
+        const brokerData = broker === "hapi" ? hapiPositions : ibkrPositions;
+        const data = {
+          version: 1,
+          broker: broker.toUpperCase(),
+          exportedAt: new Date().toISOString(),
+          positions: brokerData.map((p) => ({
+            ...p,
+            priceData: pricesCache[p.ticker] || null,
+          })),
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], {
+          type: "application/json",
+        });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `${broker}.json`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        toggleDataPanel(broker);
+      }
+
+      function exportBrokerCSV(broker) {
+        const brokerData = broker === "hapi" ? hapiPositions : ibkrPositions;
+        const SEP = ";";
+        const num = (v, dec = 2) =>
+          v != null && v !== "" && !isNaN(v)
+            ? parseFloat(v).toFixed(dec).replace(".", ",")
+            : "";
+        const rows = [
+          [
+            "Ticker",
+            "Tramo",
+            "Fecha",
+            "Unidades",
+            "P.Compra",
+            "Total Compra",
+            "PPP",
+            "Valor Actual",
+            "P.Venta",
+            "PnL%",
+            "PnL USD",
+            "Precio 52w Min",
+            "Precio 52w Max",
+            "% vs 52w Max",
+            "Estado",
+            "Notas",
+          ],
+        ];
+        brokerData.forEach((p) => {
+          const priceData = pricesCache[p.ticker] || {};
+          const price52wMin = priceData.fiftyTwoWeekLow || 0;
+          const price52wMax = priceData.fiftyTwoWeekHigh || 0;
+          const price52wPct =
+            price52wMax > 0
+              ? ((p.valorActual - price52wMax) / price52wMax) * 100
+              : 0;
+
+          p.tramos.forEach((t, i) => {
+            const tot = t.unidades * t.precio;
+            const cur =
+              t.unidades *
+              (p.estado === "cerrada" && p.pVenta ? p.pVenta : p.valorActual);
+            const pu = cur - tot;
+            const pct = tot > 0 ? (pu / tot) * 100 : 0;
+            rows.push([
+              p.ticker,
+              `${i + 1}° DCA`,
+              t.fecha,
+              num(t.unidades, 4),
+              num(t.precio, 4),
+              num(tot, 2),
+              num(p.ppp || tot / t.unidades, 4),
+              num(p.valorActual, 4),
+              p.pVenta ? num(p.pVenta, 4) : "",
+              num(pct, 2) + "%",
+              num(pu, 2),
+              num(price52wMin, 4),
+              num(price52wMax, 4),
+              num(price52wPct, 2) + "%",
+              p.estado,
+              p.notas || "",
+            ]);
+          });
+        });
+        const content =
+          String.fromCharCode(0xfeff) +
+          rows.map((r) => r.map((c) => `"${c}"`).join(SEP)).join("\n");
+        const blob = new Blob([content], { type: "text/csv;charset=utf-8" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `${broker}.csv`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        toggleDataPanel(broker);
+      }
+
+      function importBrokerJSON(input, broker) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const data = JSON.parse(e.target.result);
+            let newPositions = [];
+
+            if (data.version === 1) {
+              newPositions = data.positions || [];
+            } else if (Array.isArray(data)) {
+              newPositions = data;
+            } else {
+              throw new Error("Formato no reconocido");
+            }
+
+            const action = confirm(
+              `Importar ${newPositions.length} posiciones para ${broker.toUpperCase()}.\n¿Reemplazar todo (Aceptar) o AGREGAR (Cancelar)?`,
+            );
+
+            if (broker === "hapi") {
+              if (action) {
+                hapiPositions = newPositions;
+              } else {
+                const ids = new Set(hapiPositions.map((p) => p.ticker));
+                newPositions.forEach((p) => {
+                  if (!ids.has(p.ticker)) hapiPositions.push(p);
+                });
+              }
+            } else {
+              if (action) {
+                ibkrPositions = newPositions;
+              } else {
+                const ids = new Set(ibkrPositions.map((p) => p.ticker));
+                newPositions.forEach((p) => {
+                  if (!ids.has(p.ticker)) ibkrPositions.push(p);
+                });
+              }
+            }
+
+            saveToStorage();
+            alert(
+              `Importación completada: ${newPositions.length} posiciones importadas.`,
+            );
+            toggleDataPanel(broker);
+          } catch (err) {
+            alert("Error al importar: " + err.message);
+          }
+          input.value = "";
+        };
+        reader.readAsText(file);
+      }
+
+      function importBrokerCSV(input, broker) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const csv = e.target.result;
+            const lines = csv.trim().split("\n");
+            if (lines.length < 2) throw new Error("CSV vacío o inválido");
+
+            const headers = lines[0]
+              .split(";")
+              .map((h) => h.trim().replace(/^"|"$/g, ""));
+
+            const colIdx = {
+              ticker: headers.indexOf("Ticker"),
+              tramo: headers.indexOf("Tramo"),
+              fecha: headers.indexOf("Fecha"),
+              unidades: headers.indexOf("Unidades"),
+              pcompra: headers.indexOf("P.Compra"),
+              valorActual: headers.indexOf("Valor Actual"),
+              pventa: headers.indexOf("P.Venta"),
+              estado: headers.indexOf("Estado"),
+              notas: headers.indexOf("Notas"),
+            };
+
+            if (
+              colIdx.ticker < 0 ||
+              colIdx.fecha < 0 ||
+              colIdx.unidades < 0 ||
+              colIdx.pcompra < 0
+            ) {
+              throw new Error(
+                "CSV debe contener: Ticker, Fecha, Unidades, P.Compra",
+              );
+            }
+
+            const posMap = {};
+            for (let i = 1; i < lines.length; i++) {
+              const parts = lines[i]
+                .split(";")
+                .map((p) => p.trim().replace(/^"|"$/g, ""));
+              if (parts.length < headers.length - 2) continue;
+
+              const ticker = parts[colIdx.ticker]?.toUpperCase() || "";
+              if (!ticker) continue;
+
+              const fecha = parts[colIdx.fecha] || "";
+              const unidades =
+                parseFloat(parts[colIdx.unidades]?.replace(",", ".")) || 0;
+              const pcompra =
+                parseFloat(parts[colIdx.pcompra]?.replace(",", ".")) || 0;
+              const valorActual =
+                parseFloat(parts[colIdx.valorActual]?.replace(",", ".")) || 0;
+              const pventa = parts[colIdx.pventa]
+                ? parseFloat(parts[colIdx.pventa]?.replace(",", "."))
+                : null;
+              const estado = parts[colIdx.estado] || "abierta";
+              const notas = colIdx.notas >= 0 ? parts[colIdx.notas] || "" : "";
+
+              if (!fecha || unidades <= 0 || pcompra <= 0) continue;
+
+              if (!posMap[ticker]) {
+                posMap[ticker] = {
+                  id: genId(),
+                  ticker: ticker,
+                  estado: estado,
+                  valorActual: valorActual,
+                  pVenta: pventa,
+                  notas: notas,
+                  tramos: [],
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                };
+              }
+
+              posMap[ticker].tramos.push({
+                fecha: fecha,
+                unidades: unidades,
+                precio: pcompra,
+              });
+
+              posMap[ticker].estado = estado;
+              posMap[ticker].valorActual = valorActual;
+              if (pventa !== null) posMap[ticker].pVenta = pventa;
+            }
+
+            const newPositions = Object.values(posMap);
+
+            if (newPositions.length === 0) {
+              throw new Error("No se encontraron posiciones válidas en el CSV");
+            }
+
+            const action = confirm(
+              `Importar ${newPositions.length} posiciones para ${broker.toUpperCase()}.\n¿Reemplazar todo (Aceptar) o AGREGAR (Cancelar)?`,
+            );
+
+            if (broker === "hapi") {
+              if (action) {
+                hapiPositions = newPositions;
+              } else {
+                const ids = new Set(hapiPositions.map((p) => p.ticker));
+                newPositions.forEach((p) => {
+                  if (!ids.has(p.ticker)) hapiPositions.push(p);
+                });
+              }
+            } else {
+              if (action) {
+                ibkrPositions = newPositions;
+              } else {
+                const ids = new Set(ibkrPositions.map((p) => p.ticker));
+                newPositions.forEach((p) => {
+                  if (!ids.has(p.ticker)) ibkrPositions.push(p);
+                });
+              }
+            }
+
+            saveToStorage();
+            alert(
+              `Importación completada: ${newPositions.length} posiciones importadas.`,
+            );
+            toggleDataPanel(broker);
+          } catch (err) {
+            alert("Error al importar CSV: " + err.message);
+          }
+          input.value = "";
+        };
+        reader.readAsText(file);
+      }
+
+      function clearBroker(broker) {
+        if (
+          confirm(`¿Borrar TODAS las posiciones de ${broker.toUpperCase()}?`)
+        ) {
+          if (broker === "hapi") {
+            hapiPositions = [];
+          } else {
+            ibkrPositions = [];
+          }
+          saveToStorage();
+          renderBrokerDashboard(broker);
+          toggleDataPanel(broker);
+          alert("Datos borrados");
+        }
+      }
+
+      // ── Obtener precios de 52 semanas ──
+      async function fetch52WeekPrices(ticker) {
+        // Si ya tenemos en caché, devolverlo
+        if (pricesCache[ticker]) {
+          return pricesCache[ticker];
+        }
+
+        try {
+          // Usar Alpha Vantage (requiere API key gratuita)
+          // Para esta demo, usaremos una estructura simplificada
+          // En producción, integrar con Alpha Vantage o Finnhub
+          const response = await fetch(
+            `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${ticker}&apikey=demo`,
+            { signal: AbortSignal.timeout(5000) },
+          );
+
+          if (!response.ok) {
+            console.warn(
+              `No se pudo obtener datos de 52 semanas para ${ticker}`,
+            );
+            return null;
+          }
+
+          const data = await response.json();
+
+          // Parsear respuesta de Alpha Vantage
+          const quote = data["Global Quote"];
+          if (quote && quote["52WeekHigh"] && quote["52WeekLow"]) {
+            const priceData = {
+              fiftyTwoWeekHigh: parseFloat(quote["52WeekHigh"]),
+              fiftyTwoWeekLow: parseFloat(quote["52WeekLow"]),
+              lastPrice: parseFloat(quote["05. price"]),
+              timestamp: new Date().toISOString(),
+            };
+            pricesCache[ticker] = priceData;
+            return priceData;
+          }
+        } catch (e) {
+          console.warn(
+            `Error obteniendo datos de 52 semanas para ${ticker}:`,
+            e.message,
+          );
+        }
+
+        return null;
+      }
+
+      async function fetchAll52WeekPrices(tickers) {
+        const tickersToFetch = tickers.filter((t) => !pricesCache[t]);
+
+        if (tickersToFetch.length === 0) return;
+
+        for (const ticker of tickersToFetch) {
+          await fetch52WeekPrices(ticker);
+          // Pequeña pausa entre requests para no saturar la API
+          await new Promise((r) => setTimeout(r, 200));
         }
       }
 
@@ -2243,6 +3618,20 @@
       loadFromStorage();
       render();
       updateStorageInfo();
+
+      // Cargar precios de 52 semanas de todos los brokers al iniciar
+      (async () => {
+        const allTickers = [
+          ...new Set([
+            ...positions.map((p) => p.ticker),
+            ...hapiPositions.map((p) => p.ticker),
+            ...ibkrPositions.map((p) => p.ticker),
+          ]),
+        ];
+        if (allTickers.length > 0) {
+          await fetchAll52WeekPrices(allTickers);
+        }
+      })();
 
       // ── Tooltips KPI ──
       (function () {
