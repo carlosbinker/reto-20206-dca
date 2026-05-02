@@ -974,7 +974,7 @@
             ⬆ Importar CSV
           </button>
           <button class="btn danger" onclick="clearAll()">✕ Borrar todo</button>
-          <button class="btn" onclick="openConfig()">
+          <button class="btn" onclick="openConfig('reto')">
             ⚙ Configurar capital
           </button>
         </div>
@@ -1023,7 +1023,7 @@
           <button class="btn danger" onclick="clearBroker('hapi')">
             ✕ Borrar todo
           </button>
-          <button class="btn" onclick="openConfig()">
+          <button class="btn" onclick="openConfig('hapi')">
             ⚙ Configurar capital
           </button>
         </div>
@@ -1072,7 +1072,7 @@
           <button class="btn danger" onclick="clearBroker('ibkr')">
             ✕ Borrar todo
           </button>
-          <button class="btn" onclick="openConfig()">
+          <button class="btn" onclick="openConfig('ibkr')">
             ⚙ Configurar capital
           </button>
         </div>
@@ -1112,7 +1112,7 @@
           onclick="switchView('reto', this)"
           style="flex: 0 1 auto"
         >
-          📈 Reto
+          📈 RETO 2026
         </button>
         <button
           class="filter-btn"
@@ -1779,7 +1779,9 @@
       <div class="modal-overlay" id="config-overlay">
         <div class="modal" style="width: 400px">
           <div class="modal-header">
-            <span class="modal-title">Configuración del Reto</span>
+            <span class="modal-title" id="config-title"
+              >Configuración del Reto</span
+            >
             <button class="modal-close" onclick="closeConfig()">✕</button>
           </div>
           <div class="modal-body">
@@ -1798,7 +1800,7 @@
               </div>
             </div>
             <div class="config-group">
-              <label>Nombre del reto</label>
+              <label id="cfg-name-label">Nombre del reto</label>
               <input
                 id="cfg-nombre"
                 type="text"
@@ -1894,7 +1896,12 @@
       let editingId = null;
       let currentBroker = null; // Broker actual en modal
       let currentView = "reto"; // reto, hapi, ibkr
-      let config = { capital: 10000, nombre: "Reto DCA" };
+      let config = {
+        reto: { capital: 10000, nombre: "Reto DCA" },
+        hapi: { capital: 10000, descripcion: "" },
+        ibkr: { capital: 10000, descripcion: "" },
+        gasUrl: "",
+      };
       let liveQuotes = {};
       let pricesCache = {}; // Cache para precios de 52 semanas
 
@@ -1925,7 +1932,26 @@
           const raw = localStorage.getItem(LS_POSITIONS);
           positions = raw ? JSON.parse(raw) : [];
           const rawCfg = localStorage.getItem(LS_CONFIG);
-          if (rawCfg) config = { ...config, ...JSON.parse(rawCfg) };
+          if (rawCfg) {
+            const saved = JSON.parse(rawCfg);
+            config = {
+              reto: {
+                capital:
+                  saved.reto?.capital ?? saved.capital ?? config.reto.capital,
+                nombre:
+                  saved.reto?.nombre ?? saved.nombre ?? config.reto.nombre,
+              },
+              hapi: {
+                capital: saved.hapi?.capital ?? config.hapi.capital,
+                descripcion: saved.hapi?.descripcion ?? "",
+              },
+              ibkr: {
+                capital: saved.ibkr?.capital ?? config.ibkr.capital,
+                descripcion: saved.ibkr?.descripcion ?? "",
+              },
+              gasUrl: saved.gasUrl ?? config.gasUrl,
+            };
+          }
 
           // Cargar datos de brokers
           const rawHapi = localStorage.getItem(LS_HAPI_POSITIONS);
@@ -2081,7 +2107,7 @@
         // KPIs
         const abiertas = all.filter((p) => p.estado === "abierta");
         const cerradas = all.filter((p) => p.estado === "cerrada");
-        const CAPITAL = config.capital;
+        const CAPITAL = config.reto.capital;
         const invAbiertas = abiertas.reduce((s, p) => s + p.totalInvertido, 0);
         const gananciaRealizada = cerradas.reduce((s, p) => s + p.pnlUSD, 0);
         const liquidez = CAPITAL - invAbiertas + gananciaRealizada;
@@ -2096,7 +2122,7 @@
         document.getElementById("kpi-capital").textContent = fmt$(CAPITAL);
         document.getElementById("kpi-capital").className = "kpi-value info";
         document.getElementById("kpi-capital-sub").textContent =
-          config.nombre || "Base del reto";
+          config.reto.nombre || "Base del reto";
         document.getElementById("kpi-inv").textContent = fmt$(invAbiertas);
         document.getElementById("kpi-inv-sub").textContent =
           abiertas.length + " pos. abiertas";
@@ -2292,7 +2318,7 @@
         // KPIs
         const abiertas = all.filter((p) => p.estado === "abierta");
         const cerradas = all.filter((p) => p.estado === "cerrada");
-        const CAPITAL = 10000; // Capital default para brokers
+        const CAPITAL = config[broker].capital;
         const invAbiertas = abiertas.reduce((s, p) => s + p.totalInvertido, 0);
         const gananciaRealizada = cerradas.reduce((s, p) => s + p.pnlUSD, 0);
         const liquidez = CAPITAL - invAbiertas + gananciaRealizada;
@@ -2747,9 +2773,19 @@
       }
 
       // ── Config ──
-      function openConfig() {
-        document.getElementById("cfg-capital").value = config.capital;
-        document.getElementById("cfg-nombre").value = config.nombre || "";
+      function openConfig(view = currentView) {
+        currentView = view;
+        const isReto = view === "reto";
+        document.getElementById("config-title").textContent = isReto
+          ? "Configuración del Reto"
+          : "Configuración del Broker";
+        document.getElementById("cfg-name-label").textContent = isReto
+          ? "Nombre del reto"
+          : "Descripción de uso del broker";
+        document.getElementById("cfg-capital").value = config[view].capital;
+        document.getElementById("cfg-nombre").value = isReto
+          ? config.reto.nombre || ""
+          : config[view].descripcion || "";
         document.getElementById("cfg-gas").value = config.gasUrl || "";
         document.getElementById("config-overlay").classList.add("open");
       }
@@ -2757,14 +2793,23 @@
         document.getElementById("config-overlay").classList.remove("open");
       }
       function saveConfig() {
-        config.capital =
+        config[currentView].capital =
           parseFloat(document.getElementById("cfg-capital").value) || 10000;
-        config.nombre =
-          document.getElementById("cfg-nombre").value.trim() || "Reto DCA";
+        const nameValue =
+          document.getElementById("cfg-nombre").value.trim() || "";
+        if (currentView === "reto") {
+          config.reto.nombre = nameValue || "Reto DCA";
+        } else {
+          config[currentView].descripcion = nameValue;
+        }
         config.gasUrl = document.getElementById("cfg-gas").value.trim();
         saveToStorage();
         closeConfig();
-        render();
+        if (currentView === "reto") {
+          render();
+        } else {
+          renderBrokerDashboard(currentView);
+        }
       }
 
       // ── Data panel ──
@@ -3602,10 +3647,11 @@
         .addEventListener("click", function (e) {
           if (e.target === this) closeModal();
         });
+      // Evita cerrar el modal de configuración al interactuar dentro de él.
       document
-        .getElementById("config-overlay")
+        .querySelector("#config-overlay .modal")
         .addEventListener("click", function (e) {
-          if (e.target === this) closeConfig();
+          e.stopPropagation();
         });
       document.addEventListener("keydown", (e) => {
         if (e.key === "Escape") {
