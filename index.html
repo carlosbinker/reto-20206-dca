@@ -1295,7 +1295,7 @@
           >
             <div class="kpi-label">Capital HAPI</div>
             <div class="kpi-value info" id="kpi-capital-hapi">$0</div>
-            <div class="kpi-sub">Broker HAPI</div>
+            <div class="kpi-sub" id="kpi-capital-sub-hapi">Broker HAPI</div>
           </div>
           <div
             class="kpi info"
@@ -1448,7 +1448,7 @@
           >
             <div class="kpi-label">Capital IBKR</div>
             <div class="kpi-value info" id="kpi-capital-ibkr">$0</div>
-            <div class="kpi-sub">Broker IBKR</div>
+            <div class="kpi-sub" id="kpi-capital-sub-ibkr">Broker IBKR</div>
           </div>
           <div
             class="kpi info"
@@ -2333,6 +2333,11 @@
         const suffix = `-${broker}`;
         document.getElementById("kpi-capital" + suffix).textContent =
           fmt$(CAPITAL);
+        const description =
+          config[broker].descripcion ||
+          (broker === "hapi" ? "Broker HAPI" : "Broker IBKR");
+        document.getElementById("kpi-capital-sub-" + broker).textContent =
+          description;
         document.getElementById("kpi-inv" + suffix).textContent =
           fmt$(invAbiertas);
         document.getElementById("kpi-inv-sub" + suffix).textContent =
